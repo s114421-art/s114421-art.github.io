@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌟 每日星軌 - 即時星座運勢 🌟</title>
+    <style>
+        /* 網頁星空背景與整體設計 */
+        body {
+            background: linear-gradient(135deg, #0f0c1b, #24243e, #302b63);
+            color: #ffffff;
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 40px 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 550px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            background: linear-gradient(45deg, #ff00cc, #3333ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #b3b3b3;
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+
+        /* 下拉選單樣式 */
+        select {
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 30px;
+            border: 2px solid #5d54a4;
+            background-color: #1a162b;
+            color: #fff;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s ease;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        select:hover {
+            border-color: #ff00cc;
+            box-shadow: 0 0 10px rgba(255, 0, 204, 0.5);
+        }
+
+        /* 運勢結果區塊 */
+        .result-box {
+            margin-top: 30px;
+            padding: 25px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            text-align: left;
+            min-height: 150px;
+            line-height: 1.8;
+            border-left: 5px solid #5d54a4;
+            transition: all 0.3s ease;
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            color: #ffcc00;
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .info-item strong {
+            color: #00ffff;
+            display: block;
+        }
+
+        .fortune-section {
+            margin-bottom: 15px;
+        }
+
+        .fortune-section strong {
+            color: #ff77ff;
+        }
+
+        .loading, .placeholder {
+            text-align: center;
+            color: #a0a0a0;
+            font-style: italic;
+            padding: 40px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🔮 每日星軌占星</h1>
+        <p class="subtitle">連結宇宙星象，獲取你今天的真實運勢</p>
+        
+        <select id="astro-select">
+            <option value="">-- 請選擇你的星座 --</option>
+            <option value="aries">♈ 牡羊座 (Aries)</option>
+            <option value="taurus">♉ 金牛座 (Taurus)</option>
+            <option value="gemini">♊ 雙子座 (Gemini)</option>
+            <option value="cancer">♋ 巨蟹座 (Cancer)</option>
+            <option value="leo">♌ 獅子座 (Leo)</option>
+            <option value="virgo">♍ 處女座 (Virgo)</option>
+            <option value="libra">♎ 天秤座 (Libra)</option>
+            <option value="scorpio">♏ 天蠍座 (Scorpio)</option>
+            <option value="sagittarius">♐ 射手座 (Sagittarius)</option>
+            <option value="capricorn">♑ 摩羯座 (Capricorn)</option>
+            <option value="aquarius">♒ 水瓶座 (Aquarius)</option>
+            <option value="pisces">♓ 雙魚座 (Pisces)</option>
+        </select>
+
+        <div id="fortune-result">
+            <div class="placeholder">🌟 請選擇星座，開啟今日命運之門...</div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('astro-select').addEventListener('change', function() {
+            const selectedSign = this.value;
+            const resultBox = document.getElementById('fortune-result');
+
+            // 如果使用者選回預設的空白選項
+            if (!selectedSign) {
+                resultBox.innerHTML = '<div class="placeholder">🌟 請選擇星座，開啟今日命運之門...</div>';
+                return;
+            }
+
+            // 顯示載入中的動畫/文字
+            resultBox.innerHTML = '<div class="loading">🪐 正在觀測星象、計算星軌中...</div>';
+
+            // 串接公開免費的即時運勢 API
+            fetch(`https://api.vvhan.com/api/horoscope?type=${selectedSign}&time=today`)
+                .then(response => {
+                    if (!response.ok) throw new Error('網路連線異常');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // 成功抓到資料，渲染精美的網頁內容
+                        resultBox.innerHTML = `
+                            <div class="result-box">
+                                <h2 class="result-title">🎯 ${data.title} 今日運勢</h2>
+                                
+                                <div class="info-grid">
+                                    <div class="info-item"><strong>幸運數字</strong>${data.info.number}</div>
+                                    <div class="info-item"><strong>幸運顏色</strong>${data.info.color}</div>
+                                    <div class="info-item"><strong>速配星座</strong>${data.info.match}</div>
+                                </div>
+
+                                <div class="fortune-section">
+                                    <strong>✨ 整體運勢：</strong>
+                                    <p>${data.fortune.all}</p>
+                                </div>
+                                <div class="fortune-section">
+                                    <strong>💼 事業學業：</strong>
+                                    <p>${data.fortune.work}</p>
+                                </div>
+                                <div class="fortune-section">
+                                    <strong>❤️ 愛情婚姻：</strong>
+                                    <p>${data.fortune.love}</p>
+                                </div>
+                                <div class="fortune-section">
+                                    <strong>💰 財運投資：</strong>
+                                    <p>${data.fortune.money}</p>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        resultBox.innerHTML = '<div class="placeholder">❌ 占星出了一點差錯，請重新選擇一次。</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error("API 錯誤:", error);
+                    resultBox.innerHTML = '<div class="placeholder">📡 星際訊號微弱（連線失敗），請檢查網路再試一次！</div>';
+                });
+        });
+    </script>
+</body>
+</html>
