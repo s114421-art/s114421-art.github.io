@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌟 每日星軌 - 即時星座運勢 🌟</title>
+    <title>🎲 經典棋類三合一中心</title>
     <style>
-        /* 網頁星空背景與整體設計 */
         body {
-            background: linear-gradient(135deg, #0f0c1b, #24243e, #302b63);
-            color: #ffffff;
+            background: linear-gradient(135deg, #1e1e2f, #2a2a40);
+            color: #fff;
             font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             min-height: 100vh;
             margin: 0;
@@ -19,196 +18,369 @@
             box-sizing: border-box;
         }
 
-        .container {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 40px 30px;
-            border-radius: 20px;
-            backdrop-filter: blur(15px);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            max-width: 550px;
-            width: 100%;
-        }
-
         h1 {
-            font-size: 2.2rem;
             margin-bottom: 10px;
-            letter-spacing: 2px;
-            background: linear-gradient(45deg, #ff00cc, #3333ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .subtitle {
-            color: #b3b3b3;
-            font-size: 1rem;
-            margin-bottom: 30px;
-        }
-
-        /* 下拉選單樣式 */
-        select {
-            padding: 12px 25px;
-            font-size: 16px;
-            border-radius: 30px;
-            border: 2px solid #5d54a4;
-            background-color: #1a162b;
-            color: #fff;
-            cursor: pointer;
-            outline: none;
-            transition: all 0.3s ease;
-            width: 80%;
-            max-width: 300px;
-        }
-
-        select:hover {
-            border-color: #ff00cc;
-            box-shadow: 0 0 10px rgba(255, 0, 204, 0.5);
-        }
-
-        /* 運勢結果區塊 */
-        .result-box {
-            margin-top: 30px;
-            padding: 25px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 15px;
-            text-align: left;
-            min-height: 150px;
-            line-height: 1.8;
-            border-left: 5px solid #5d54a4;
-            transition: all 0.3s ease;
-        }
-
-        .result-title {
-            font-size: 1.5rem;
-            color: #ffcc00;
-            margin-top: 0;
-            margin-bottom: 15px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 10px;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-
-        .info-item strong {
             color: #00ffff;
-            display: block;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
         }
 
-        .fortune-section {
+        /* 控制面板 */
+        .controls {
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        select, button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        select {
+            background-color: #33334d;
+            color: #fff;
+            border: 1px solid #55557f;
+        }
+
+        button {
+            background: linear-gradient(45deg, #ff00cc, #3333ff);
+            color: white;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .status {
+            font-size: 1.2rem;
             margin-bottom: 15px;
+            font-weight: bold;
+            color: #ffcc00;
         }
 
-        .fortune-section strong {
-            color: #ff77ff;
+        /* 復古仿真木紋棋盤 */
+        .board-container {
+            padding: 10px;
+            background: #8b5a2b; /* 邊框木色 */
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .loading, .placeholder {
-            text-align: center;
-            color: #a0a0a0;
-            font-style: italic;
-            padding: 40px 0;
+        #board {
+            display: grid;
+            background: #e4a853; /* 棋盤底色 */
+            gap: 0px;
+            border: 2px solid #4a3015;
+        }
+
+        /* 棋格與交點交叉線效果 */
+        .cell {
+            width: 35px;
+            height: 35px;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 繪製棋盤格線 */
+        .cell::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background-color: #4a3015;
+            top: 50%;
+            left: 0;
+        }
+        .cell::after {
+            content: "";
+            position: absolute;
+            width: 1px;
+            height: 100%;
+            background-color: #4a3015;
+            left: 50%;
+            top: 0;
+        }
+
+        /* 棋子樣式 */
+        .stone {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+            transition: all 0.3s ease;
+        }
+
+        .stone.black {
+            background: radial-gradient(circle at 30% 30%, #555, #000 70%);
+        }
+
+        .stone.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ccc 70%);
+            border: 1px solid #aaa;
+        }
+
+        /* 提示說明的規則區塊 */
+        .rules-card {
+            margin-top: 25px;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #ccc;
+            border-left: 4px solid #00ffff;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>🔮 每日星軌占星</h1>
-        <p class="subtitle">連結宇宙星象，獲取你今天的真實運勢</p>
-        
-        <select id="astro-select">
-            <option value="">-- 請選擇你的星座 --</option>
-            <option value="aries">♈ 牡羊座 (Aries)</option>
-            <option value="taurus">♉ 金牛座 (Taurus)</option>
-            <option value="gemini">♊ 雙子座 (Gemini)</option>
-            <option value="cancer">♋ 巨蟹座 (Cancer)</option>
-            <option value="leo">♌ 獅子座 (Leo)</option>
-            <option value="virgo">♍ 處女座 (Virgo)</option>
-            <option value="libra">♎ 天秤座 (Libra)</option>
-            <option value="scorpio">♏ 天蠍座 (Scorpio)</option>
-            <option value="sagittarius">♐ 射手座 (Sagittarius)</option>
-            <option value="capricorn">♑ 摩羯座 (Capricorn)</option>
-            <option value="aquarius">♒ 水瓶座 (Aquarius)</option>
-            <option value="pisces">♓ 雙魚座 (Pisces)</option>
+    <h1>🎲 經典棋類三合一遊樂場</h1>
+    
+    <div class="controls">
+        <label for="game-select">選擇遊戲：</label>
+        <select id="game-select">
+            <option value="gomoku">五子棋 (15x15)</option>
+            <option value="othello">黑白棋 (8x8)</option>
+            <option value="go">圍棋體驗 (19x19)</option>
         </select>
+        <button id="restart-btn">重新開始</button>
+    </div>
 
-        <div id="fortune-result">
-            <div class="placeholder">🌟 請選擇星座，開啟今日命運之門...</div>
-        </div>
+    <div id="game-status" class="status">輪到：⚫ 黑子</div>
+
+    <div class="board-container">
+        <div id="board"></div>
+    </div>
+
+    <div class="rules-card">
+        <h3 style="margin-top:0; color:#fff;">💡 遊戲當前規則：</h3>
+        <p id="game-desc">【五子棋】黑子先行。橫、豎、斜線任意方向先連成五子者獲勝！</p>
     </div>
 
     <script>
-        document.getElementById('astro-select').addEventListener('change', function() {
-            const selectedSign = this.value;
-            const resultBox = document.getElementById('fortune-result');
+        const boardElement = document.getElementById('board');
+        const gameSelect = document.getElementById('game-select');
+        const restartBtn = document.getElementById('restart-btn');
+        const statusElement = document.getElementById('game-status');
+        const descElement = document.getElementById('game-desc');
 
-            // 如果使用者選回預設的空白選項
-            if (!selectedSign) {
-                resultBox.innerHTML = '<div class="placeholder">🌟 請選擇星座，開啟今日命運之門...</div>';
-                return;
+        let boardSize = 15; // 預設五子棋 15x15
+        let currentGame = 'gomoku';
+        let currentPlayer = 'black'; // 'black' 或 'white'
+        let boardState = []; // 紀錄棋盤狀態
+        let gameOver = false;
+
+        // 遊戲說明文本
+        const descriptions = {
+            gomoku: "【五子棋】黑子先行。任一方向（橫、豎、斜）先連成五子者即獲勝！",
+            othello: "【黑白棋】經典 8x8 棋盤。夾住對手棋子可將其翻轉，最後棋子多者勝！（目前支援基礎雙人落子翻轉）",
+            go: "【圍棋體驗】大棋盤 19x19。體驗傳統圍棋落子樂趣，適合雙人自訂對弈排局。"
+        };
+
+        // 初始化遊戲
+        function initGame() {
+            currentGame = gameSelect.value;
+            gameOver = false;
+            currentPlayer = 'black';
+            statusElement.innerText = "輪到：⚫ 黑子";
+            descElement.innerText = descriptions[currentGame];
+
+            // 根據遊戲調整棋盤大小
+            if (currentGame === 'gomoku') boardSize = 15;
+            else if (currentGame === 'othello') boardSize = 8;
+            else if (currentGame === 'go') boardSize = 19;
+
+            // 初始化二維陣列狀態
+            boardState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+
+            // 黑白棋初始四顆子
+            if (currentGame === 'othello') {
+                const mid = boardSize / 2;
+                boardState[mid-1][mid-1] = 'white';
+                boardState[mid][mid] = 'white';
+                boardState[mid-1][mid] = 'black';
+                boardState[mid][mid-1] = 'black';
             }
 
-            // 顯示載入中的動畫/文字
-            resultBox.innerHTML = '<div class="loading">🪐 正在觀測星象、計算星軌中...</div>';
+            renderBoard();
+        }
 
-            // 串接公開免費的即時運勢 API
-            fetch(`https://api.vvhan.com/api/horoscope?type=${selectedSign}&time=today`)
-                .then(response => {
-                    if (!response.ok) throw new Error('網路連線異常');
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        // 成功抓到資料，渲染精美的網頁內容
-                        resultBox.innerHTML = `
-                            <div class="result-box">
-                                <h2 class="result-title">🎯 ${data.title} 今日運勢</h2>
-                                
-                                <div class="info-grid">
-                                    <div class="info-item"><strong>幸運數字</strong>${data.info.number}</div>
-                                    <div class="info-item"><strong>幸運顏色</strong>${data.info.color}</div>
-                                    <div class="info-item"><strong>速配星座</strong>${data.info.match}</div>
-                                </div>
+        // 繪製棋盤
+        function renderBoard() {
+            boardElement.innerHTML = '';
+            boardElement.style.gridTemplateColumns = `repeat(${boardSize}, 35px)`;
+            boardElement.style.gridTemplateRows = `repeat(${boardSize}, 35px)`;
 
-                                <div class="fortune-section">
-                                    <strong>✨ 整體運勢：</strong>
-                                    <p>${data.fortune.all}</p>
-                                </div>
-                                <div class="fortune-section">
-                                    <strong>💼 事業學業：</strong>
-                                    <p>${data.fortune.work}</p>
-                                </div>
-                                <div class="fortune-section">
-                                    <strong>❤️ 愛情婚姻：</strong>
-                                    <p>${data.fortune.love}</p>
-                                </div>
-                                <div class="fortune-section">
-                                    <strong>💰 財運投資：</strong>
-                                    <p>${data.fortune.money}</p>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        resultBox.innerHTML = '<div class="placeholder">❌ 占星出了一點差錯，請重新選擇一次。</div>';
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+
+                    // 如果該位置有棋子，畫出來
+                    if (boardState[r][c]) {
+                        const stone = document.createElement('div');
+                        stone.classList.add('stone', boardState[r][c]);
+                        cell.appendChild(stone);
                     }
-                })
-                .catch(error => {
-                    console.error("API 錯誤:", error);
-                    resultBox.innerHTML = '<div class="placeholder">📡 星際訊號微弱（連線失敗），請檢查網路再試一次！</div>';
-                });
-        });
+
+                    cell.addEventListener('click', () => handleCellClick(r, c));
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        // 處理點擊落子
+        function handleCellClick(r, c) {
+            if (gameOver || boardState[r][c]) return;
+
+            if (currentGame === 'gomoku' || currentGame === 'go') {
+                // 五子棋與圍棋直接落子
+                boardState[r][c] = currentPlayer;
+                renderBoard();
+
+                if (currentGame === 'gomoku' && checkGomokuWin(r, c)) {
+                    statusElement.innerText = `🎉 恭喜！${currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子'} 獲勝了！`;
+                    gameOver = true;
+                    return;
+                }
+                
+                switchPlayer();
+            } 
+            else if (currentGame === 'othello') {
+                // 黑白棋落子與翻轉邏輯
+                const flipped = flipOthelloStones(r, c, currentPlayer);
+                if (flipped > 0) {
+                    boardState[r][c] = currentPlayer;
+                    renderBoard();
+                    
+                    // 檢查棋盤是否滿了
+                    if (isBoardFull()) {
+                        checkOthelloWinner();
+                    } else {
+                        switchPlayer();
+                    }
+                } else {
+                    alert("這裡不能放喔！必須能夾住並翻轉對手的棋子。");
+                }
+            }
+        }
+
+        // 切換玩家
+        function switchPlayer() {
+            currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+            statusElement.innerText = `輪到：${currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子'}`;
+        }
+
+        // 判斷五子棋輸贏 (檢查四個方向)
+        function checkGomokuWin(r, c) {
+            const player = boardState[r][c];
+            const directions = [
+                [[0, 1], [0, -1]],  // 水平
+                [[1, 0], [-1, 0]],  // 垂直
+                [[1, 1], [-1, -1]], // 主對角線
+                [[1, -1], [-1, 1]]  // 副對角線
+            ];
+
+            for (let dir of directions) {
+                let count = 1;
+                for (let [dr, dc] of dir) {
+                    let nr = r + dr;
+                    let nc = c + dc;
+                    while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === player) {
+                        count++;
+                        nr += dr;
+                        nc += dc;
+                    }
+                }
+                if (count >= 5) return true;
+            }
+            return false;
+        }
+
+        // 黑白棋翻轉核心算法
+        function flipOthelloStones(r, c, player) {
+            const opponent = player === 'black' ? 'white' : 'black';
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],           [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
+            let totalFlipped = 0;
+            let stonesToFlip = [];
+
+            for (let [dr, dc] of directions) {
+                let nr = r + dr;
+                let nc = c + dc;
+                let currentDirStones = [];
+
+                // 往該方向一直找對手的棋子
+                while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === opponent) {
+                    currentDirStones.push([nr, nc]);
+                    nr += dr;
+                    nc += dc;
+                }
+
+                // 如果最後頂到的是自己的棋子，代表夾擊成功，加進翻轉清單
+                if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === player) {
+                    if (currentDirStones.length > 0) {
+                        stonesToFlip = stonesToFlip.concat(currentDirStones);
+                    }
+                }
+            }
+
+            // 執行翻轉
+            for (let [fr, fc] of stonesToFlip) {
+                boardState[fr][fc] = player;
+                totalFlipped++;
+            }
+
+            return totalFlipped;
+        }
+
+        function isBoardFull() {
+            return boardState.every(row => row.every(cell => cell !== null));
+        }
+
+        function checkOthelloWinner() {
+            let blackCount = 0, whiteCount = 0;
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    if (boardState[r][c] === 'black') blackCount++;
+                    if (boardState[r][c] === 'white') whiteCount++;
+                }
+            }
+            gameOver = true;
+            if (blackCount > whiteCount) statusElement.innerText = `🏁 遊戲結束！⚫ 黑子勝 (${blackCount} vs ${whiteCount})`;
+            else if (whiteCount > blackCount) statusElement.innerText = `🏁 遊戲結束！⚪ 白子勝 (${whiteCount} vs ${blackCount})`;
+            else statusElement.innerText = `🏁 遊戲結束！平手 (${blackCount} vs ${whiteCount})`;
+        }
+
+        // 事件監聽
+        gameSelect.addEventListener('change', initGame);
+        restartBtn.addEventListener('click', initGame);
+
+        // 網頁載入時啟動
+        initGame();
     </script>
 </body>
 </html>
