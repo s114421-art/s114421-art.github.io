@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎲 智慧棋類遊戲中心 (含AI電腦對戰)</title>
+    <title>🎲 智慧棋類對戰中心</title>
     <style>
         body {
             background: linear-gradient(135deg, #1e1e2f, #2a2a40);
@@ -77,6 +77,7 @@
             background: #8b5a2b;
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
         }
 
         #board {
@@ -86,7 +87,6 @@
             border: 2px solid #4a3015;
         }
 
-        /* 棋格與交點交叉線效果 */
         .cell {
             width: 35px;
             height: 35px;
@@ -97,7 +97,6 @@
             align-items: center;
         }
 
-        /* 繪製棋盤格線 */
         .cell::before {
             content: "";
             position: absolute;
@@ -117,7 +116,6 @@
             top: 0;
         }
 
-        /* 棋子樣式 */
         .stone {
             width: 30px;
             height: 30px;
@@ -137,7 +135,59 @@
             border: 1px solid #aaa;
         }
 
-        /* 提示說說明區塊 */
+        /* 全螢幕獲勝結算彈出視窗 */
+        .win-overlay {
+            display: none; /* 預設隱藏 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 12, 27, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .win-modal {
+            background: linear-gradient(135deg, #1f1c2c, #928dab);
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+            border: 2px solid #00ffff;
+            animation: popUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popUp {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .win-title {
+            font-size: 2.5rem;
+            color: #ffcc00;
+            margin-bottom: 30px;
+            text-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+        }
+
+        .modal-btns {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .modal-btns button {
+            font-size: 1.1rem;
+            padding: 12px 30px;
+        }
+
+        .btn-home {
+            background: linear-gradient(45deg, #4b6cb7, #182848);
+        }
+
         .rules-card {
             margin-top: 25px;
             max-width: 550px;
@@ -166,13 +216,14 @@
         <label for="mode-select">模式：</label>
         <select id="mode-select">
             <option value="pvp">👥 雙人對戰</option>
-            <option value="pve">🤖 電腦對戰 (玩家執黑)</option>
+            <option value="pve-first">🤖 電腦對戰 (玩家先手)</option>
+            <option value="pve-second">🤖 電腦對戰 (玩家後手)</option>
         </select>
 
         <button id="restart-btn">重新開始</button>
     </div>
 
-    <div id="game-status" class="status">輪到：⚫ 黑子 (你)</div>
+    <div id="game-status" class="status">輪到：⚫ 黑子</div>
 
     <div class="board-container">
         <div id="board"></div>
@@ -183,6 +234,16 @@
         <p id="game-desc">載入中...</p>
     </div>
 
+    <div id="win-overlay" class="win-overlay">
+        <div class="win-modal">
+            <div id="win-message" class="win-title">🎉 黑子獲勝！</div>
+            <div class="modal-btns">
+                <button id="modal-next-btn">再下一局</button>
+                <button id="modal-home-btn" class="btn-home">回首頁選單</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const boardElement = document.getElementById('board');
         const gameSelect = document.getElementById('game-select');
@@ -190,19 +251,26 @@
         const restartBtn = document.getElementById('restart-btn');
         const statusElement = document.getElementById('game-status');
         const descElement = document.getElementById('game-desc');
+        
+        // 彈出視窗元素
+        const winOverlay = document.getElementById('win-overlay');
+        const winMessage = document.getElementById('win-message');
+        const modalNextBtn = document.getElementById('modal-next-btn');
+        const modalHomeBtn = document.getElementById('modal-home-btn');
 
         let boardSize = 15;
         let currentGame = 'gomoku';
-        let gameMode = 'pvp'; // 'pvp' (雙人) 或 'pve' (電腦)
-        let currentPlayer = 'black'; // 'black' 或 'white'
+        let gameMode = 'pvp'; // 'pvp', 'pve-first', 'pve-second'
+        let playerColor = 'black'; // 玩家的棋子顏色
+        let currentPlayer = 'black'; // 當前下子方 (永遠黑子先)
         let boardState = []; 
         let gameOver = false;
         let isAiThinking = false;
 
         const descriptions = {
-            gomoku: "【五子棋】先連成五子者勝。電腦模式下，AI 擁有自動防守與進攻邏輯，試著打敗它吧！",
-            othello: "【黑白棋】夾住敵子即可翻轉。電腦模式下，AI 會自動評估並選擇能翻轉最多棋子的最佳落子點。",
-            go: "【圍棋體驗】19x19 大棋盤。電腦模式下，AI 會在你落子的周圍展開圍攻。"
+            gomoku: "【五子棋】先連成五子者勝。選擇先手你執黑子先下；選擇後手你執白子，電腦黑子會先落子。",
+            othello: "【黑白棋】夾住敵子即可翻轉。選擇先手你執黑，後手執白。最後棋子多者勝。",
+            go: "【圍棋體驗】19x19 大棋盤。適合雙人對弈排局，或與電腦進行基礎圍地練習。"
         };
 
         function initGame() {
@@ -210,7 +278,15 @@
             gameMode = modeSelect.value;
             gameOver = false;
             isAiThinking = false;
-            currentPlayer = 'black';
+            currentPlayer = 'black'; // 規則規定黑子先行
+            winOverlay.style.display = 'none'; // 隱藏結算畫面
+
+            // 設定玩家顏色
+            if (gameMode === 'pve-second') {
+                playerColor = 'white'; // 玩家後手執白
+            } else {
+                playerColor = 'black'; // 雙人或先手，玩家預設第一步都是黑
+            }
             
             updateStatusText();
             descElement.innerText = descriptions[currentGame];
@@ -230,14 +306,21 @@
             }
 
             renderBoard();
+
+            // 如果玩家選擇後手(執白)，代表現在是電腦(黑子)的回合，立刻觸發AI
+            if (gameMode === 'pve-second' && currentPlayer === 'black') {
+                triggerAiMove();
+            }
         }
 
         function updateStatusText() {
             if (gameOver) return;
+            let colorName = currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子';
+            
             if (gameMode === 'pvp') {
-                statusElement.innerText = `輪到：${currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子'}`;
+                statusElement.innerText = `輪到：${colorName}`;
             } else {
-                statusElement.innerText = currentPlayer === 'black' ? '輪到：⚫ 黑子 (你)' : '🤖 電腦思考中...';
+                statusElement.innerText = currentPlayer === playerColor ? `輪到：${colorName} (你)` : `🤖 電腦思考中...`;
             }
         }
 
@@ -265,20 +348,19 @@
 
         function handleCellClick(r, c) {
             if (gameOver || isAiThinking || boardState[r][c]) return;
-            if (gameMode === 'pve' && currentPlayer === 'white') return; // 電腦回合禁止玩家點擊
+            // 電腦模式下，不是玩家的顏色就不給點
+            if (gameMode !== 'pvp' && currentPlayer !== playerColor) return; 
 
             executeMove(r, c);
         }
 
-        // 執行落子邏輯
         function executeMove(r, c) {
             if (currentGame === 'gomoku' || currentGame === 'go') {
                 boardState[r][c] = currentPlayer;
                 renderBoard();
 
                 if (currentGame === 'gomoku' && checkWin(r, c, currentPlayer)) {
-                    statusElement.innerText = `🎉 恭喜！${currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子'} 獲勝了！`;
-                    gameOver = true;
+                    showWinScreen(currentPlayer === 'black' ? '⚫ 黑子獲勝！' : '⚪ 白子獲勝！');
                     return;
                 }
                 
@@ -295,36 +377,45 @@
                     } else {
                         proceedTurn();
                     }
-                } else if (gameMode === 'pvp' || currentPlayer === 'black') {
+                } else if (gameMode === 'pvp' || currentPlayer === playerColor) {
                     alert("這裡不能放喔！必須能夾住並翻轉對手的棋子。");
                 }
             }
         }
 
-        // 處理回合輪替
         function proceedTurn() {
             currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
             updateStatusText();
 
-            if (gameMode === 'pve' && currentPlayer === 'white' && !gameOver) {
-                isAiThinking = true;
-                setTimeout(makeAiMove, 600); // 延遲一下模擬電腦思考，體驗更好
+            if (gameMode !== 'pvp' && currentPlayer !== playerColor && !gameOver) {
+                triggerAiMove();
             }
         }
 
-        // ================= AI 電腦大腦核心 =================
+        function triggerAiMove() {
+            isAiThinking = true;
+            setTimeout(makeAiMove, 600);
+        }
+
+        // 宣告獲勝並跳出中央大視窗
+        function showWinScreen(message) {
+            gameOver = true;
+            winMessage.innerText = message;
+            winOverlay.style.display = 'flex'; // 顯示覆蓋全畫面的中視窗
+        }
+
+        // ================= AI 電腦邏輯 =================
         function makeAiMove() {
             if (gameOver) return;
             let targetR = -1, targetC = -1;
+            let aiColor = playerColor === 'black' ? 'white' : 'black';
 
             if (currentGame === 'gomoku') {
-                // 五子棋 AI 邏輯：防守優先，其次進攻
                 let maxScore = -1;
-                // 掃描全盤找最佳空位
                 for (let r = 0; r < boardSize; r++) {
                     for (let c = 0; c < boardSize; c++) {
                         if (!boardState[r][c]) {
-                            let score = evaluateGomokuCell(r, c);
+                            let score = evaluateGomokuCell(r, c, aiColor);
                             if (score > maxScore) {
                                 maxScore = score;
                                 targetR = r;
@@ -335,12 +426,11 @@
                 }
             } 
             else if (currentGame === 'othello') {
-                // 黑白棋 AI：找出能翻轉最多棋子的位置
                 let maxFlips = 0;
                 for (let r = 0; r < boardSize; r++) {
                     for (let c = 0; c < boardSize; c++) {
                         if (!boardState[r][c]) {
-                            let flips = flipOthelloStones(r, c, 'white', false); // 只計算不真正翻轉
+                            let flips = flipOthelloStones(r, c, aiColor, false);
                             if (flips > maxFlips) {
                                 maxFlips = flips;
                                 targetR = r;
@@ -349,7 +439,6 @@
                         }
                     }
                 }
-                // 如果 AI 沒地方可以下，直接跳過
                 if (maxFlips === 0) {
                     isAiThinking = false;
                     proceedTurn();
@@ -357,11 +446,10 @@
                 }
             } 
             else if (currentGame === 'go') {
-                // 圍棋體驗 AI：在玩家周圍隨機圍攻
                 let candidates = [];
                 for (let r = 0; r < boardSize; r++) {
                     for (let c = 0; c < boardSize; c++) {
-                        if (boardState[r][c] === 'black') {
+                        if (boardState[r][c] === playerColor) {
                             const neighbors = [[r-1,c], [r+1,c], [r,c-1], [r,c+1]];
                             for (let [nr, nc] of neighbors) {
                                 if (nr>=0 && nr<boardSize && nc>=0 && nc<boardSize && !boardState[nr][nc]) {
@@ -375,7 +463,6 @@
                     const pick = candidates[Math.floor(Math.random() * candidates.length)];
                     targetR = pick[0]; targetC = pick[1];
                 } else {
-                    // 全盤隨機
                     while (true) {
                         let r = Math.floor(Math.random() * boardSize);
                         let c = Math.floor(Math.random() * boardSize);
@@ -388,28 +475,21 @@
                 isAiThinking = false;
                 executeMove(targetR, targetC);
             } else {
-                // 防呆：隨機下
                 isAiThinking = false;
                 switchPlayer();
             }
         }
 
-        // 五子棋 AI 評分機制
-        function evaluateGomokuCell(r, c) {
-            // 簡單算分：阻擋玩家連 4 給 1000 分，阻擋連 3 給 100 分，自己連 4 給 2000 分等
+        function evaluateGomokuCell(r, c, aiColor) {
             let score = 0;
-            // 檢查如果玩家下這裡會不會贏 (防守)
-            if (checkWin(r, c, 'black')) score += 1000;
-            // 檢查如果自己下這裡會不會贏 (攻擊)
-            if (checkWin(r, c, 'white')) score += 2000;
-            
-            // 基礎分：越靠近中央分數越高
+            let humanColor = aiColor === 'black' ? 'white' : 'black';
+            if (checkWin(r, c, humanColor)) score += 1000; // 防守
+            if (checkWin(r, c, aiColor)) score += 2000;    // 進攻
             score += (boardSize/2 - Math.abs(r - boardSize/2)) + (boardSize/2 - Math.abs(c - boardSize/2));
             return score;
         }
 
-        // ================= 規則判斷基礎函式 =================
-
+        // ================= 基礎判斷函式 =================
         function checkWin(r, c, player) {
             const directions = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
             for (let dir of directions) {
@@ -475,17 +555,20 @@
                     if (boardState[r][c] === 'white') w++;
                 }
             }
-            gameOver = true;
-            if (b > w) statusElement.innerText = `🏁 遊戲結束！🎉 你贏了 (${b} vs ${w})`;
-            else if (w > b) statusElement.innerText = `🏁 遊戲結束！🤖 電腦贏了 (${w} vs ${b})`;
-            else statusElement.innerText = `🏁 遊戲結束！平手 (${b} vs ${w})`;
+            if (b > w) showWinScreen(`🏁 遊戲結束！黑子獲勝 (${b} vs ${w})`);
+            else if (w > b) showWinScreen(`🏁 遊戲結束！白子獲勝 (${w} vs ${b})`);
+            else showWinScreen(`🏁 遊戲結束！雙方平手 (${b} vs ${w})`);
         }
+
+        // 彈出視窗按鈕綁定事件
+        modalNextBtn.addEventListener('click', initGame); // 再下一局
+        modalHomeBtn.addEventListener('click', () => {
+            // 模擬回到首頁選單：重置所有選單到第一個選項，並初始化
+            gameSelect.selectedIndex = 0;
+            modeSelect.selectedIndex = 0;
+            initGame();
+        });
 
         gameSelect.addEventListener('change', initGame);
         modeSelect.addEventListener('change', initGame);
-        restartBtn.addEventListener('click', initGame);
-
-        initGame();
-    </script>
-</body>
-</html>
+        restartBtn.addEventListener('click',
