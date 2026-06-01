@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎲 經典棋類三合一中心</title>
+    <title>🎲 智慧棋類遊戲中心 (含AI電腦對戰)</title>
     <style>
         body {
             background: linear-gradient(135deg, #1e1e2f, #2a2a40);
@@ -39,8 +39,8 @@
         }
 
         select, button {
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 10px 15px;
+            font-size: 15px;
             border-radius: 8px;
             border: none;
             cursor: pointer;
@@ -64,23 +64,24 @@
         }
 
         .status {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             margin-bottom: 15px;
             font-weight: bold;
             color: #ffcc00;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
         /* 復古仿真木紋棋盤 */
         .board-container {
             padding: 10px;
-            background: #8b5a2b; /* 邊框木色 */
+            background: #8b5a2b;
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         #board {
             display: grid;
-            background: #e4a853; /* 棋盤底色 */
+            background: #e4a853;
             gap: 0px;
             border: 2px solid #4a3015;
         }
@@ -124,7 +125,7 @@
             position: relative;
             z-index: 2;
             box-shadow: 0 3px 6px rgba(0,0,0,0.4);
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         .stone.black {
@@ -136,10 +137,10 @@
             border: 1px solid #aaa;
         }
 
-        /* 提示說明的規則區塊 */
+        /* 提示說說明區塊 */
         .rules-card {
             margin-top: 25px;
-            max-width: 500px;
+            max-width: 550px;
             background: rgba(255, 255, 255, 0.05);
             padding: 15px 20px;
             border-radius: 10px;
@@ -152,66 +153,74 @@
 </head>
 <body>
 
-    <h1>🎲 經典棋類三合一遊樂場</h1>
+    <h1>🎲 智慧棋類對戰中心</h1>
     
     <div class="controls">
-        <label for="game-select">選擇遊戲：</label>
+        <label for="game-select">遊戲：</label>
         <select id="game-select">
             <option value="gomoku">五子棋 (15x15)</option>
             <option value="othello">黑白棋 (8x8)</option>
             <option value="go">圍棋體驗 (19x19)</option>
         </select>
+
+        <label for="mode-select">模式：</label>
+        <select id="mode-select">
+            <option value="pvp">👥 雙人對戰</option>
+            <option value="pve">🤖 電腦對戰 (玩家執黑)</option>
+        </select>
+
         <button id="restart-btn">重新開始</button>
     </div>
 
-    <div id="game-status" class="status">輪到：⚫ 黑子</div>
+    <div id="game-status" class="status">輪到：⚫ 黑子 (你)</div>
 
     <div class="board-container">
         <div id="board"></div>
     </div>
 
     <div class="rules-card">
-        <h3 style="margin-top:0; color:#fff;">💡 遊戲當前規則：</h3>
-        <p id="game-desc">【五子棋】黑子先行。橫、豎、斜線任意方向先連成五子者獲勝！</p>
+        <h3 style="margin-top:0; color:#fff;">💡 當前模式指南：</h3>
+        <p id="game-desc">載入中...</p>
     </div>
 
     <script>
         const boardElement = document.getElementById('board');
         const gameSelect = document.getElementById('game-select');
+        const modeSelect = document.getElementById('mode-select');
         const restartBtn = document.getElementById('restart-btn');
         const statusElement = document.getElementById('game-status');
         const descElement = document.getElementById('game-desc');
 
-        let boardSize = 15; // 預設五子棋 15x15
+        let boardSize = 15;
         let currentGame = 'gomoku';
+        let gameMode = 'pvp'; // 'pvp' (雙人) 或 'pve' (電腦)
         let currentPlayer = 'black'; // 'black' 或 'white'
-        let boardState = []; // 紀錄棋盤狀態
+        let boardState = []; 
         let gameOver = false;
+        let isAiThinking = false;
 
-        // 遊戲說明文本
         const descriptions = {
-            gomoku: "【五子棋】黑子先行。任一方向（橫、豎、斜）先連成五子者即獲勝！",
-            othello: "【黑白棋】經典 8x8 棋盤。夾住對手棋子可將其翻轉，最後棋子多者勝！（目前支援基礎雙人落子翻轉）",
-            go: "【圍棋體驗】大棋盤 19x19。體驗傳統圍棋落子樂趣，適合雙人自訂對弈排局。"
+            gomoku: "【五子棋】先連成五子者勝。電腦模式下，AI 擁有自動防守與進攻邏輯，試著打敗它吧！",
+            othello: "【黑白棋】夾住敵子即可翻轉。電腦模式下，AI 會自動評估並選擇能翻轉最多棋子的最佳落子點。",
+            go: "【圍棋體驗】19x19 大棋盤。電腦模式下，AI 會在你落子的周圍展開圍攻。"
         };
 
-        // 初始化遊戲
         function initGame() {
             currentGame = gameSelect.value;
+            gameMode = modeSelect.value;
             gameOver = false;
+            isAiThinking = false;
             currentPlayer = 'black';
-            statusElement.innerText = "輪到：⚫ 黑子";
+            
+            updateStatusText();
             descElement.innerText = descriptions[currentGame];
 
-            // 根據遊戲調整棋盤大小
             if (currentGame === 'gomoku') boardSize = 15;
             else if (currentGame === 'othello') boardSize = 8;
             else if (currentGame === 'go') boardSize = 19;
 
-            // 初始化二維陣列狀態
             boardState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
 
-            // 黑白棋初始四顆子
             if (currentGame === 'othello') {
                 const mid = boardSize / 2;
                 boardState[mid-1][mid-1] = 'white';
@@ -223,7 +232,15 @@
             renderBoard();
         }
 
-        // 繪製棋盤
+        function updateStatusText() {
+            if (gameOver) return;
+            if (gameMode === 'pvp') {
+                statusElement.innerText = `輪到：${currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子'}`;
+            } else {
+                statusElement.innerText = currentPlayer === 'black' ? '輪到：⚫ 黑子 (你)' : '🤖 電腦思考中...';
+            }
+        }
+
         function renderBoard() {
             boardElement.innerHTML = '';
             boardElement.style.gridTemplateColumns = `repeat(${boardSize}, 35px)`;
@@ -233,10 +250,7 @@
                 for (let c = 0; c < boardSize; c++) {
                     const cell = document.createElement('div');
                     cell.classList.add('cell');
-                    cell.dataset.row = r;
-                    cell.dataset.col = c;
 
-                    // 如果該位置有棋子，畫出來
                     if (boardState[r][c]) {
                         const stone = document.createElement('div');
                         stone.classList.add('stone', boardState[r][c]);
@@ -249,67 +263,161 @@
             }
         }
 
-        // 處理點擊落子
         function handleCellClick(r, c) {
-            if (gameOver || boardState[r][c]) return;
+            if (gameOver || isAiThinking || boardState[r][c]) return;
+            if (gameMode === 'pve' && currentPlayer === 'white') return; // 電腦回合禁止玩家點擊
 
+            executeMove(r, c);
+        }
+
+        // 執行落子邏輯
+        function executeMove(r, c) {
             if (currentGame === 'gomoku' || currentGame === 'go') {
-                // 五子棋與圍棋直接落子
                 boardState[r][c] = currentPlayer;
                 renderBoard();
 
-                if (currentGame === 'gomoku' && checkGomokuWin(r, c)) {
+                if (currentGame === 'gomoku' && checkWin(r, c, currentPlayer)) {
                     statusElement.innerText = `🎉 恭喜！${currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子'} 獲勝了！`;
                     gameOver = true;
                     return;
                 }
                 
-                switchPlayer();
+                proceedTurn();
             } 
             else if (currentGame === 'othello') {
-                // 黑白棋落子與翻轉邏輯
-                const flipped = flipOthelloStones(r, c, currentPlayer);
+                const flipped = flipOthelloStones(r, c, currentPlayer, true);
                 if (flipped > 0) {
                     boardState[r][c] = currentPlayer;
                     renderBoard();
                     
-                    // 檢查棋盤是否滿了
-                    if (isBoardFull()) {
+                    if (isBoardFull() || !hasValidMoves('black') && !hasValidMoves('white')) {
                         checkOthelloWinner();
                     } else {
-                        switchPlayer();
+                        proceedTurn();
                     }
-                } else {
+                } else if (gameMode === 'pvp' || currentPlayer === 'black') {
                     alert("這裡不能放喔！必須能夾住並翻轉對手的棋子。");
                 }
             }
         }
 
-        // 切換玩家
-        function switchPlayer() {
+        // 處理回合輪替
+        function proceedTurn() {
             currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
-            statusElement.innerText = `輪到：${currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子'}`;
+            updateStatusText();
+
+            if (gameMode === 'pve' && currentPlayer === 'white' && !gameOver) {
+                isAiThinking = true;
+                setTimeout(makeAiMove, 600); // 延遲一下模擬電腦思考，體驗更好
+            }
         }
 
-        // 判斷五子棋輸贏 (檢查四個方向)
-        function checkGomokuWin(r, c) {
-            const player = boardState[r][c];
-            const directions = [
-                [[0, 1], [0, -1]],  // 水平
-                [[1, 0], [-1, 0]],  // 垂直
-                [[1, 1], [-1, -1]], // 主對角線
-                [[1, -1], [-1, 1]]  // 副對角線
-            ];
+        // ================= AI 電腦大腦核心 =================
+        function makeAiMove() {
+            if (gameOver) return;
+            let targetR = -1, targetC = -1;
 
+            if (currentGame === 'gomoku') {
+                // 五子棋 AI 邏輯：防守優先，其次進攻
+                let maxScore = -1;
+                // 掃描全盤找最佳空位
+                for (let r = 0; r < boardSize; r++) {
+                    for (let c = 0; c < boardSize; c++) {
+                        if (!boardState[r][c]) {
+                            let score = evaluateGomokuCell(r, c);
+                            if (score > maxScore) {
+                                maxScore = score;
+                                targetR = r;
+                                targetC = c;
+                            }
+                        }
+                    }
+                }
+            } 
+            else if (currentGame === 'othello') {
+                // 黑白棋 AI：找出能翻轉最多棋子的位置
+                let maxFlips = 0;
+                for (let r = 0; r < boardSize; r++) {
+                    for (let c = 0; c < boardSize; c++) {
+                        if (!boardState[r][c]) {
+                            let flips = flipOthelloStones(r, c, 'white', false); // 只計算不真正翻轉
+                            if (flips > maxFlips) {
+                                maxFlips = flips;
+                                targetR = r;
+                                targetC = c;
+                            }
+                        }
+                    }
+                }
+                // 如果 AI 沒地方可以下，直接跳過
+                if (maxFlips === 0) {
+                    isAiThinking = false;
+                    proceedTurn();
+                    return;
+                }
+            } 
+            else if (currentGame === 'go') {
+                // 圍棋體驗 AI：在玩家周圍隨機圍攻
+                let candidates = [];
+                for (let r = 0; r < boardSize; r++) {
+                    for (let c = 0; c < boardSize; c++) {
+                        if (boardState[r][c] === 'black') {
+                            const neighbors = [[r-1,c], [r+1,c], [r,c-1], [r,c+1]];
+                            for (let [nr, nc] of neighbors) {
+                                if (nr>=0 && nr<boardSize && nc>=0 && nc<boardSize && !boardState[nr][nc]) {
+                                    candidates.push([nr, nc]);
+                                }
+                            }
+                        }
+                    }
+                }
+                if (candidates.length > 0) {
+                    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+                    targetR = pick[0]; targetC = pick[1];
+                } else {
+                    // 全盤隨機
+                    while (true) {
+                        let r = Math.floor(Math.random() * boardSize);
+                        let c = Math.floor(Math.random() * boardSize);
+                        if (!boardState[r][c]) { targetR = r; targetC = c; break; }
+                    }
+                }
+            }
+
+            if (targetR !== -1 && targetC !== -1) {
+                isAiThinking = false;
+                executeMove(targetR, targetC);
+            } else {
+                // 防呆：隨機下
+                isAiThinking = false;
+                switchPlayer();
+            }
+        }
+
+        // 五子棋 AI 評分機制
+        function evaluateGomokuCell(r, c) {
+            // 簡單算分：阻擋玩家連 4 給 1000 分，阻擋連 3 給 100 分，自己連 4 給 2000 分等
+            let score = 0;
+            // 檢查如果玩家下這裡會不會贏 (防守)
+            if (checkWin(r, c, 'black')) score += 1000;
+            // 檢查如果自己下這裡會不會贏 (攻擊)
+            if (checkWin(r, c, 'white')) score += 2000;
+            
+            // 基礎分：越靠近中央分數越高
+            score += (boardSize/2 - Math.abs(r - boardSize/2)) + (boardSize/2 - Math.abs(c - boardSize/2));
+            return score;
+        }
+
+        // ================= 規則判斷基礎函式 =================
+
+        function checkWin(r, c, player) {
+            const directions = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
             for (let dir of directions) {
                 let count = 1;
                 for (let [dr, dc] of dir) {
-                    let nr = r + dr;
-                    let nc = c + dc;
+                    let nr = r + dr, nc = c + dc;
                     while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === player) {
-                        count++;
-                        nr += dr;
-                        nc += dc;
+                        count++; nr += dr; nc += dc;
                     }
                 }
                 if (count >= 5) return true;
@@ -317,44 +425,42 @@
             return false;
         }
 
-        // 黑白棋翻轉核心算法
-        function flipOthelloStones(r, c, player) {
+        function flipOthelloStones(r, c, player, doFlip) {
             const opponent = player === 'black' ? 'white' : 'black';
-            const directions = [
-                [-1, -1], [-1, 0], [-1, 1],
-                [0, -1],           [0, 1],
-                [1, -1],  [1, 0],  [1, 1]
-            ];
+            const directions = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
             let totalFlipped = 0;
             let stonesToFlip = [];
 
             for (let [dr, dc] of directions) {
-                let nr = r + dr;
-                let nc = c + dc;
+                let nr = r + dr, nc = c + dc;
                 let currentDirStones = [];
-
-                // 往該方向一直找對手的棋子
                 while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === opponent) {
                     currentDirStones.push([nr, nc]);
-                    nr += dr;
-                    nc += dc;
+                    nr += dr; nc += dc;
                 }
-
-                // 如果最後頂到的是自己的棋子，代表夾擊成功，加進翻轉清單
                 if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === player) {
-                    if (currentDirStones.length > 0) {
-                        stonesToFlip = stonesToFlip.concat(currentDirStones);
-                    }
+                    if (currentDirStones.length > 0) stonesToFlip = stonesToFlip.concat(currentDirStones);
                 }
             }
 
-            // 執行翻轉
-            for (let [fr, fc] of stonesToFlip) {
-                boardState[fr][fc] = player;
-                totalFlipped++;
+            if (doFlip) {
+                for (let [fr, fc] of stonesToFlip) {
+                    boardState[fr][fc] = player;
+                    totalFlipped++;
+                }
+            } else {
+                totalFlipped = stonesToFlip.length;
             }
-
             return totalFlipped;
+        }
+
+        function hasValidMoves(player) {
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    if (!boardState[r][c] && flipOthelloStones(r, c, player, false) > 0) return true;
+                }
+            }
+            return false;
         }
 
         function isBoardFull() {
@@ -362,24 +468,23 @@
         }
 
         function checkOthelloWinner() {
-            let blackCount = 0, whiteCount = 0;
+            let b = 0, w = 0;
             for (let r = 0; r < boardSize; r++) {
                 for (let c = 0; c < boardSize; c++) {
-                    if (boardState[r][c] === 'black') blackCount++;
-                    if (boardState[r][c] === 'white') whiteCount++;
+                    if (boardState[r][c] === 'black') b++;
+                    if (boardState[r][c] === 'white') w++;
                 }
             }
             gameOver = true;
-            if (blackCount > whiteCount) statusElement.innerText = `🏁 遊戲結束！⚫ 黑子勝 (${blackCount} vs ${whiteCount})`;
-            else if (whiteCount > blackCount) statusElement.innerText = `🏁 遊戲結束！⚪ 白子勝 (${whiteCount} vs ${blackCount})`;
-            else statusElement.innerText = `🏁 遊戲結束！平手 (${blackCount} vs ${whiteCount})`;
+            if (b > w) statusElement.innerText = `🏁 遊戲結束！🎉 你贏了 (${b} vs ${w})`;
+            else if (w > b) statusElement.innerText = `🏁 遊戲結束！🤖 電腦贏了 (${w} vs ${b})`;
+            else statusElement.innerText = `🏁 遊戲結束！平手 (${b} vs ${w})`;
         }
 
-        // 事件監聽
         gameSelect.addEventListener('change', initGame);
+        modeSelect.addEventListener('change', initGame);
         restartBtn.addEventListener('click', initGame);
 
-        // 網頁載入時啟動
         initGame();
     </script>
 </body>
