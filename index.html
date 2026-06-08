@@ -17,13 +17,11 @@
             padding: 20px;
             box-sizing: border-box;
         }
-
         h1 {
             margin-bottom: 10px;
             color: #00ffff;
             text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
         }
-
         .controls {
             margin-bottom: 20px;
             background: rgba(255, 255, 255, 0.1);
@@ -36,7 +34,6 @@
             flex-wrap: wrap;
             justify-content: center;
         }
-
         select, button {
             padding: 10px 15px;
             font-size: 15px;
@@ -45,23 +42,19 @@
             cursor: pointer;
             font-weight: bold;
         }
-
         select {
             background-color: #33334d;
             color: #fff;
             border: 1px solid #55557f;
         }
-
         button {
             background: linear-gradient(45deg, #ff00cc, #3333ff);
             color: white;
             transition: transform 0.2s;
         }
-
         button:hover {
             transform: scale(1.05);
         }
-
         .status {
             font-size: 1.3rem;
             margin-bottom: 15px;
@@ -69,22 +62,18 @@
             color: #ffcc00;
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
-
         .board-container {
             padding: 10px;
             background: #8b5a2b;
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            position: relative;
         }
-
         #board {
             display: grid;
             background: #e4a853;
             gap: 0px;
             border: 2px solid #4a3015;
         }
-
         .cell {
             width: 35px;
             height: 35px;
@@ -94,7 +83,6 @@
             justify-content: center;
             align-items: center;
         }
-
         .cell::before {
             content: "";
             position: absolute;
@@ -113,7 +101,6 @@
             left: 50%;
             top: 0;
         }
-
         .stone {
             width: 30px;
             height: 30px;
@@ -122,17 +109,13 @@
             z-index: 2;
             box-shadow: 0 3px 6px rgba(0,0,0,0.4);
         }
-
         .stone.black {
             background: radial-gradient(circle at 30% 30%, #555, #000 70%);
         }
-
         .stone.white {
             background: radial-gradient(circle at 30% 30%, #fff, #ccc 70%);
             border: 1px solid #aaa;
         }
-
-        /* 獲勝結算畫面 */
         .win-overlay {
             display: none;
             position: fixed;
@@ -147,7 +130,6 @@
             align-items: center;
             flex-direction: column;
         }
-
         .win-modal {
             background: linear-gradient(135deg, #1f1c2c, #928dab);
             padding: 40px 60px;
@@ -156,29 +138,24 @@
             box-shadow: 0 20px 50px rgba(0,0,0,0.7);
             border: 2px solid #00ffff;
         }
-
         .win-title {
             font-size: 2.5rem;
             color: #ffcc00;
             margin-bottom: 30px;
             text-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
         }
-
         .modal-btns {
             display: flex;
             gap: 20px;
             justify-content: center;
         }
-
         .modal-btns button {
             font-size: 1.1rem;
             padding: 12px 30px;
         }
-
         .btn-home {
             background: linear-gradient(45deg, #4b6cb7, #182848);
         }
-
         .rules-card {
             margin-top: 25px;
             max-width: 550px;
@@ -222,7 +199,7 @@
 
     <div class="rules-card">
         <h3 style="margin-top:0; color:#fff;">💡 當前模式指南：</h3>
-        <p id="game-desc">載入中...</p>
+        <p id="game-desc">說明載入中...</p>
     </div>
 
     <div id="win-overlay" class="win-overlay">
@@ -236,15 +213,14 @@
     </div>
 
     <script>
-        // 將所有邏輯包在 window.onload 裡面，確保 HTML 標籤百分之百載入完畢才執行
-        window.onload = function() {
+        // 用最安全的方式確保 DOM 完全載入後才執行遊戲
+        function startChessCenter() {
             const boardElement = document.getElementById('board');
             const gameSelect = document.getElementById('game-select');
             const modeSelect = document.getElementById('mode-select');
             const restartBtn = document.getElementById('restart-btn');
             const statusElement = document.getElementById('game-status');
             const descElement = document.getElementById('game-desc');
-            
             const winOverlay = document.getElementById('win-overlay');
             const winMessage = document.getElementById('win-message');
             const modalNextBtn = document.getElementById('modal-next-btn');
@@ -279,7 +255,13 @@
                     playerColor = 'black'; 
                 }
                 
-                updateStatusText();
+                let colorName = currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子';
+                if (gameMode === 'pvp') {
+                    statusElement.innerText = `輪到：${colorName}`;
+                } else {
+                    statusElement.innerText = currentPlayer === playerColor ? `輪到：${colorName} (你)` : `🤖 電腦思考中...`;
+                }
+
                 descElement.innerText = descriptions[currentGame];
 
                 if (currentGame === 'gomoku') boardSize = 15;
@@ -299,18 +281,8 @@
                 renderBoard();
 
                 if (gameMode === 'pve-second' && currentPlayer === 'black') {
-                    triggerAiMove();
-                }
-            }
-
-            function updateStatusText() {
-                if (gameOver) return;
-                let colorName = currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子';
-                
-                if (gameMode === 'pvp') {
-                    statusElement.innerText = `輪到：${colorName}`;
-                } else {
-                    statusElement.innerText = currentPlayer === playerColor ? `輪到：${colorName} (你)` : `🤖 電腦思考中...`;
+                    isAiThinking = true;
+                    setTimeout(makeAiMove, 500);
                 }
             }
 
@@ -330,17 +302,14 @@
                             cell.appendChild(stone);
                         }
 
-                        cell.addEventListener('click', () => handleCellClick(r, c));
+                        cell.addEventListener('click', () => {
+                            if (gameOver || isAiThinking || boardState[r][c]) return;
+                            if (gameMode !== 'pvp' && currentPlayer !== playerColor) return; 
+                            executeMove(r, c);
+                        });
                         boardElement.appendChild(cell);
                     }
                 }
-            }
-
-            function handleCellClick(r, c) {
-                if (gameOver || isAiThinking || boardState[r][c]) return;
-                if (gameMode !== 'pvp' && currentPlayer !== playerColor) return; 
-
-                executeMove(r, c);
             }
 
             function executeMove(r, c) {
@@ -349,10 +318,11 @@
                     renderBoard();
 
                     if (currentGame === 'gomoku' && checkWin(r, c, currentPlayer)) {
-                        showWinScreen(currentPlayer === 'black' ? '⚫ 黑子獲勝！' : '⚪ 白子獲勝！');
+                        gameOver = true;
+                        winMessage.innerText = currentPlayer === 'black' ? '⚫ 黑子獲勝！' : '⚪ 白子獲勝！';
+                        winOverlay.style.display = 'flex';
                         return;
                     }
-                    
                     proceedTurn();
                 } 
                 else if (currentGame === 'othello') {
@@ -360,9 +330,17 @@
                     if (flipped > 0) {
                         boardState[r][c] = currentPlayer;
                         renderBoard();
-                        
-                        if (isBoardFull() || (!hasValidMoves('black') && !hasValidMoves('white'))) {
-                            checkOthelloWinner();
+                        if (boardState.every(row => row.every(cell => cell !== null)) || (!hasValidMoves('black') && !hasValidMoves('white'))) {
+                            let b = 0, w = 0;
+                            for (let i = 0; i < boardSize; i++) {
+                                for (let j = 0; j < boardSize; j++) {
+                                    if (boardState[i][j] === 'black') b++;
+                                    if (boardState[i][j] === 'white') w++;
+                                }
+                            }
+                            gameOver = true;
+                            winMessage.innerText = b > w ? `🏁 黑子獲勝 (${b} vs ${w})` : (w > b ? `🏁 白子獲勝 (${w} vs ${b})` : `🏁 雙方平手 (${b} vs ${w})`);
+                            winOverlay.style.display = 'flex';
                         } else {
                             proceedTurn();
                         }
@@ -374,22 +352,17 @@
 
             function proceedTurn() {
                 currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
-                updateStatusText();
+                let colorName = currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子';
+                if (gameMode === 'pvp') {
+                    statusElement.innerText = `輪到：${colorName}`;
+                } else {
+                    statusElement.innerText = currentPlayer === playerColor ? `輪到：${colorName} (你)` : `🤖 電腦思考中...`;
+                }
 
                 if (gameMode !== 'pvp' && currentPlayer !== playerColor && !gameOver) {
-                    triggerAiMove();
+                    isAiThinking = true;
+                    setTimeout(makeAiMove, 500);
                 }
-            }
-
-            function triggerAiMove() {
-                isAiThinking = true;
-                setTimeout(makeAiMove, 500);
-            }
-
-            function showWinScreen(message) {
-                gameOver = true;
-                winMessage.innerText = message;
-                winOverlay.style.display = 'flex'; 
             }
 
             function makeAiMove() {
@@ -403,7 +376,6 @@
                         for (let c = 0; c < boardSize; c++) {
                             if (!boardState[r][c]) {
                                 let score = (boardSize/2 - Math.abs(r - boardSize/2)) + (boardSize/2 - Math.abs(c - boardSize/2));
-                                
                                 const neighbors = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,1],[-1,1],[1,-1]];
                                 for (let [dr, dc] of neighbors) {
                                     let nr = r + dr, nc = c + dc;
@@ -411,12 +383,7 @@
                                         score += boardState[nr][nc] === aiColor ? 15 : 10; 
                                     }
                                 }
-
-                                if (score > maxScore) {
-                                    maxScore = score;
-                                    targetR = r;
-                                    targetC = c;
-                                }
+                                if (score > maxScore) { maxScore = score; targetR = r; targetC = c; }
                             }
                         }
                     }
@@ -427,19 +394,11 @@
                         for (let c = 0; c < boardSize; c++) {
                             if (!boardState[r][c]) {
                                 let flips = flipOthelloStones(r, c, aiColor, false);
-                                if (flips > maxFlips) {
-                                    maxFlips = flips;
-                                    targetR = r;
-                                    targetC = c;
-                                }
+                                if (flips > maxFlips) { maxFlips = flips; targetR = r; targetC = c; }
                             }
                         }
                     }
-                    if (maxFlips === 0) {
-                        isAiThinking = false;
-                        proceedTurn();
-                        return;
-                    }
+                    if (maxFlips === 0) { isAiThinking = false; proceedTurn(); return; }
                 } 
                 else if (currentGame === 'go') {
                     let candidates = [];
@@ -448,9 +407,7 @@
                             if (boardState[r][c] === playerColor) {
                                 const neighbors = [[r-1,c], [r+1,c], [r,c-1], [r,c+1]];
                                 for (let [nr, nc] of neighbors) {
-                                    if (nr>=0 && nr<boardSize && nc>=0 && nc<boardSize && !boardState[nr][nc]) {
-                                        candidates.push([nr, nc]);
-                                    }
+                                    if (nr>=0 && nr<boardSize && nc>=0 && nc<boardSize && !boardState[nr][nc]) candidates.push([nr, nc]);
                                 }
                             }
                         }
@@ -480,7 +437,7 @@
                 } else {
                     isAiThinking = false;
                     currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
-                    updateStatusText();
+                    proceedTurn();
                 }
             }
 
@@ -504,6 +461,48 @@
                 const directions = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
                 let totalFlipped = 0;
                 let stonesToFlip = [];
-
                 for (let [dr, dc] of directions) {
-                    let nr = r + dr, nc = c + dc
+                    let nr = r + dr, nc = c + dc;
+                    let currentDirStones = [];
+                    while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === opponent) {
+                        currentDirStones.push([nr, nc]); nr += dr; nc += dc;
+                    }
+                    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === player) {
+                        if (currentDirStones.length > 0) stonesToFlip = stonesToFlip.concat(currentDirStones);
+                    }
+                }
+                if (doFlip) {
+                    for (let [fr, fc] of stonesToFlip) { boardState[fr][fc] = player; totalFlipped++; }
+                } else {
+                    totalFlipped = stonesToFlip.length;
+                }
+                return totalFlipped;
+            }
+
+            function hasValidMoves(player) {
+                for (let r = 0; r < boardSize; r++) {
+                    for (let c = 0; c < boardSize; c++) {
+                        if (!boardState[r][c] && flipOthelloStones(r, c, player, false) > 0) return true;
+                    }
+                }
+                return false;
+            }
+
+            modalNextBtn.addEventListener('click', initGame); 
+            modalHomeBtn.addEventListener('click', () => { window.location.reload(); });
+            gameSelect.addEventListener('change', initGame);
+            modeSelect.addEventListener('change', initGame);
+            restartBtn.addEventListener('click', initGame);
+
+            initGame();
+        }
+
+        // 用雙重保障確保網頁加載完畢才啟動
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', startChessCenter);
+        } else {
+            startChessCenter();
+        }
+    </script>
+</body>
+</html>
