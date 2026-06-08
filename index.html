@@ -24,7 +24,6 @@
             text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
         }
 
-        /* 控制面板 */
         .controls {
             margin-bottom: 20px;
             background: rgba(255, 255, 255, 0.1);
@@ -71,7 +70,6 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* 復古仿真木紋棋盤 */
         .board-container {
             padding: 10px;
             background: #8b5a2b;
@@ -123,7 +121,6 @@
             position: relative;
             z-index: 2;
             box-shadow: 0 3px 6px rgba(0,0,0,0.4);
-            transition: all 0.2s ease;
         }
 
         .stone.black {
@@ -135,9 +132,9 @@
             border: 1px solid #aaa;
         }
 
-        /* 全螢幕獲勝結算彈出視窗 */
+        /* 獲勝結算畫面 */
         .win-overlay {
-            display: none; /* 預設隱藏 */
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
@@ -158,12 +155,6 @@
             text-align: center;
             box-shadow: 0 20px 50px rgba(0,0,0,0.7);
             border: 2px solid #00ffff;
-            animation: popUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes popUp {
-            from { transform: scale(0.7); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
         }
 
         .win-title {
@@ -252,7 +243,6 @@
         const statusElement = document.getElementById('game-status');
         const descElement = document.getElementById('game-desc');
         
-        // 彈出視窗元素
         const winOverlay = document.getElementById('win-overlay');
         const winMessage = document.getElementById('win-message');
         const modalNextBtn = document.getElementById('modal-next-btn');
@@ -260,9 +250,9 @@
 
         let boardSize = 15;
         let currentGame = 'gomoku';
-        let gameMode = 'pvp'; // 'pvp', 'pve-first', 'pve-second'
-        let playerColor = 'black'; // 玩家的棋子顏色
-        let currentPlayer = 'black'; // 當前下子方 (永遠黑子先)
+        let gameMode = 'pvp'; 
+        let playerColor = 'black'; 
+        let currentPlayer = 'black'; 
         let boardState = []; 
         let gameOver = false;
         let isAiThinking = false;
@@ -278,14 +268,13 @@
             gameMode = modeSelect.value;
             gameOver = false;
             isAiThinking = false;
-            currentPlayer = 'black'; // 規則規定黑子先行
-            winOverlay.style.display = 'none'; // 隱藏結算畫面
+            currentPlayer = 'black'; 
+            winOverlay.style.display = 'none'; 
 
-            // 設定玩家顏色
             if (gameMode === 'pve-second') {
-                playerColor = 'white'; // 玩家後手執白
+                playerColor = 'white'; 
             } else {
-                playerColor = 'black'; // 雙人或先手，玩家預設第一步都是黑
+                playerColor = 'black'; 
             }
             
             updateStatusText();
@@ -307,7 +296,6 @@
 
             renderBoard();
 
-            // 如果玩家選擇後手(執白)，代表現在是電腦(黑子)的回合，立刻觸發AI
             if (gameMode === 'pve-second' && currentPlayer === 'black') {
                 triggerAiMove();
             }
@@ -348,226 +336,13 @@
 
         function handleCellClick(r, c) {
             if (gameOver || isAiThinking || boardState[r][c]) return;
-            // 電腦模式下，不是玩家的顏色就不給點
             if (gameMode !== 'pvp' && currentPlayer !== playerColor) return; 
 
             executeMove(r, c);
         }
 
         function executeMove(r, c) {
-            if (currentGame === 'gomoku' || currentGame === 'go') {
-                boardState[r][c] = currentPlayer;
-                renderBoard();
-
-                if (currentGame === 'gomoku' && checkWin(r, c, currentPlayer)) {
-                    showWinScreen(currentPlayer === 'black' ? '⚫ 黑子獲勝！' : '⚪ 白子獲勝！');
-                    return;
-                }
-                
-                proceedTurn();
-            } 
-            else if (currentGame === 'othello') {
-                const flipped = flipOthelloStones(r, c, currentPlayer, true);
-                if (flipped > 0) {
-                    boardState[r][c] = currentPlayer;
-                    renderBoard();
-                    
-                    if (isBoardFull() || !hasValidMoves('black') && !hasValidMoves('white')) {
-                        checkOthelloWinner();
-                    } else {
-                        proceedTurn();
-                    }
-                } else if (gameMode === 'pvp' || currentPlayer === playerColor) {
-                    alert("這裡不能放喔！必須能夾住並翻轉對手的棋子。");
-                }
-            }
-        }
-
-        function proceedTurn() {
-            currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
-            updateStatusText();
-
-            if (gameMode !== 'pvp' && currentPlayer !== playerColor && !gameOver) {
-                triggerAiMove();
-            }
-        }
-
-        function triggerAiMove() {
-            isAiThinking = true;
-            setTimeout(makeAiMove, 600);
-        }
-
-        // 宣告獲勝並跳出中央大視窗
-        function showWinScreen(message) {
-            gameOver = true;
-            winMessage.innerText = message;
-            winOverlay.style.display = 'flex'; // 顯示覆蓋全畫面的中視窗
-        }
-
-        // ================= AI 電腦邏輯 =================
-        function makeAiMove() {
-            if (gameOver) return;
-            let targetR = -1, targetC = -1;
-            let aiColor = playerColor === 'black' ? 'white' : 'black';
-
-            if (currentGame === 'gomoku') {
-                let maxScore = -1;
-                for (let r = 0; r < boardSize; r++) {
-                    for (let c = 0; c < boardSize; c++) {
-                        if (!boardState[r][c]) {
-                            let score = evaluateGomokuCell(r, c, aiColor);
-                            if (score > maxScore) {
-                                maxScore = score;
-                                targetR = r;
-                                targetC = c;
-                            }
-                        }
-                    }
-                }
-            } 
-            else if (currentGame === 'othello') {
-                let maxFlips = 0;
-                for (let r = 0; r < boardSize; r++) {
-                    for (let c = 0; c < boardSize; c++) {
-                        if (!boardState[r][c]) {
-                            let flips = flipOthelloStones(r, c, aiColor, false);
-                            if (flips > maxFlips) {
-                                maxFlips = flips;
-                                targetR = r;
-                                targetC = c;
-                            }
-                        }
-                    }
-                }
-                if (maxFlips === 0) {
-                    isAiThinking = false;
-                    proceedTurn();
-                    return;
-                }
-            } 
-            else if (currentGame === 'go') {
-                let candidates = [];
-                for (let r = 0; r < boardSize; r++) {
-                    for (let c = 0; c < boardSize; c++) {
-                        if (boardState[r][c] === playerColor) {
-                            const neighbors = [[r-1,c], [r+1,c], [r,c-1], [r,c+1]];
-                            for (let [nr, nc] of neighbors) {
-                                if (nr>=0 && nr<boardSize && nc>=0 && nc<boardSize && !boardState[nr][nc]) {
-                                    candidates.push([nr, nc]);
-                                }
-                            }
-                        }
-                    }
-                }
-                if (candidates.length > 0) {
-                    const pick = candidates[Math.floor(Math.random() * candidates.length)];
-                    targetR = pick[0]; targetC = pick[1];
-                } else {
-                    while (true) {
-                        let r = Math.floor(Math.random() * boardSize);
-                        let c = Math.floor(Math.random() * boardSize);
-                        if (!boardState[r][c]) { targetR = r; targetC = c; break; }
-                    }
-                }
-            }
-
-            if (targetR !== -1 && targetC !== -1) {
-                isAiThinking = false;
-                executeMove(targetR, targetC);
-            } else {
-                isAiThinking = false;
-                switchPlayer();
-            }
-        }
-
-        function evaluateGomokuCell(r, c, aiColor) {
-            let score = 0;
-            let humanColor = aiColor === 'black' ? 'white' : 'black';
-            if (checkWin(r, c, humanColor)) score += 1000; // 防守
-            if (checkWin(r, c, aiColor)) score += 2000;    // 進攻
-            score += (boardSize/2 - Math.abs(r - boardSize/2)) + (boardSize/2 - Math.abs(c - boardSize/2));
-            return score;
-        }
-
-        // ================= 基礎判斷函式 =================
-        function checkWin(r, c, player) {
-            const directions = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
-            for (let dir of directions) {
-                let count = 1;
-                for (let [dr, dc] of dir) {
-                    let nr = r + dr, nc = c + dc;
-                    while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === player) {
-                        count++; nr += dr; nc += dc;
-                    }
-                }
-                if (count >= 5) return true;
-            }
-            return false;
-        }
-
-        function flipOthelloStones(r, c, player, doFlip) {
-            const opponent = player === 'black' ? 'white' : 'black';
-            const directions = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
-            let totalFlipped = 0;
-            let stonesToFlip = [];
-
-            for (let [dr, dc] of directions) {
-                let nr = r + dr, nc = c + dc;
-                let currentDirStones = [];
-                while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === opponent) {
-                    currentDirStones.push([nr, nc]);
-                    nr += dr; nc += dc;
-                }
-                if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === player) {
-                    if (currentDirStones.length > 0) stonesToFlip = stonesToFlip.concat(currentDirStones);
-                }
-            }
-
-            if (doFlip) {
-                for (let [fr, fc] of stonesToFlip) {
-                    boardState[fr][fc] = player;
-                    totalFlipped++;
-                }
-            } else {
-                totalFlipped = stonesToFlip.length;
-            }
-            return totalFlipped;
-        }
-
-        function hasValidMoves(player) {
-            for (let r = 0; r < boardSize; r++) {
-                for (let c = 0; c < boardSize; c++) {
-                    if (!boardState[r][c] && flipOthelloStones(r, c, player, false) > 0) return true;
-                }
-            }
-            return false;
-        }
-
-        function isBoardFull() {
-            return boardState.every(row => row.every(cell => cell !== null));
-        }
-
-        function checkOthelloWinner() {
-            let b = 0, w = 0;
-            for (let r = 0; r < boardSize; r++) {
-                for (let c = 0; c < boardSize; c++) {
-                    if (boardState[r][c] === 'black') b++;
-                    if (boardState[r][c] === 'white') w++;
-                }
-            }
-            if (b > w) showWinScreen(`🏁 遊戲結束！黑子獲勝 (${b} vs ${w})`);
-            else if (w > b) showWinScreen(`🏁 遊戲結束！白子獲勝 (${w} vs ${b})`);
-            else showWinScreen(`🏁 遊戲結束！雙方平手 (${b} vs ${w})`);
-        }
-
-        // 彈出視窗按鈕綁定事件
-        modalNextBtn.addEventListener('click', initGame); // 再下一局
-        modalHomeBtn.addEventListener('click', () => {
-            // 模擬回到首頁選單：重置所有選單到第一個選項，並初始化
-            gameSelect.selectedIndex = 0;
-            modeSelect.selectedIndex = 0;
-            initGame();
-        });
+            if (currentGame === 'gom
 
         gameSelect.addEventListener('change', initGame);
         modeSelect.addEventListener('change', initGame);
