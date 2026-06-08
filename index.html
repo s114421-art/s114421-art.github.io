@@ -5,168 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎲 智慧棋類對戰中心</title>
     <style>
-        body {
-            background: linear-gradient(135deg, #1e1e2f, #2a2a40);
-            color: #fff;
-            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        h1 {
-            margin-bottom: 10px;
-            color: #00ffff;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-        }
-        .controls {
-            margin-bottom: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        select, button {
-            padding: 10px 15px;
-            font-size: 15px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        select {
-            background-color: #33334d;
-            color: #fff;
-            border: 1px solid #55557f;
-        }
-        button {
-            background: linear-gradient(45deg, #ff00cc, #3333ff);
-            color: white;
-            transition: transform 0.2s;
-        }
-        button:hover {
-            transform: scale(1.05);
-        }
-        .status {
-            font-size: 1.3rem;
-            margin-bottom: 15px;
-            font-weight: bold;
-            color: #ffcc00;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-        .board-container {
-            padding: 10px;
-            background: #8b5a2b;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        #board {
-            display: grid;
-            background: #e4a853;
-            gap: 0px;
-            border: 2px solid #4a3015;
-        }
-        .cell {
-            width: 35px;
-            height: 35px;
-            position: relative;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .cell::before {
-            content: "";
-            position: absolute;
-            width: 100%;
-            height: 1px;
-            background-color: #4a3015;
-            top: 50%;
-            left: 0;
-        }
-        .cell::after {
-            content: "";
-            position: absolute;
-            width: 1px;
-            height: 100%;
-            background-color: #4a3015;
-            left: 50%;
-            top: 0;
-        }
-        .stone {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            position: relative;
-            z-index: 2;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
-        }
-        .stone.black {
-            background: radial-gradient(circle at 30% 30%, #555, #000 70%);
-        }
-        .stone.white {
-            background: radial-gradient(circle at 30% 30%, #fff, #ccc 70%);
-            border: 1px solid #aaa;
-        }
-        .win-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(15, 12, 27, 0.85);
-            backdrop-filter: blur(10px);
-            z-index: 999;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        .win-modal {
-            background: linear-gradient(135deg, #1f1c2c, #928dab);
-            padding: 40px 60px;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
-            border: 2px solid #00ffff;
-        }
-        .win-title {
-            font-size: 2.5rem;
-            color: #ffcc00;
-            margin-bottom: 30px;
-            text-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
-        }
-        .modal-btns {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-        }
-        .modal-btns button {
-            font-size: 1.1rem;
-            padding: 12px 30px;
-        }
-        .btn-home {
-            background: linear-gradient(45deg, #4b6cb7, #182848);
-        }
-        .rules-card {
-            margin-top: 25px;
-            max-width: 550px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px 20px;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            line-height: 1.6;
-            color: #ccc;
-            border-left: 4px solid #00ffff;
-        }
+        body { background: #1e1e2f; color: #fff; font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        h1 { color: #00ffff; text-shadow: 0 0 10px rgba(0, 255, 255, 0.3); margin-bottom: 10px; }
+        .controls { margin-bottom: 20px; background: rgba(255, 255, 255, 0.1); padding: 15px 25px; border-radius: 15px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        select, button { padding: 10px 15px; font-size: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        select { background: #33334d; color: #fff; border: 1px solid #55557f; }
+        button { background: linear-gradient(45deg, #ff00cc, #3333ff); color: white; transition: transform 0.2s; }
+        button:hover { transform: scale(1.05); }
+        .status { font-size: 1.3rem; margin-bottom: 15px; color: #ffcc00; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .board-container { padding: 10px; background: #8b5a2b; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #board { display: grid; background: #e4a853; border: 2px solid #4a3015; }
+        .cell { width: 30px; height: 30px; position: relative; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .cell::before { content: ""; position: absolute; width: 100%; height: 1px; background: #4a3015; top: 50%; left: 0; }
+        .cell::after { content: ""; position: absolute; width: 1px; height: 100%; background: #4a3015; left: 50%; top: 0; }
+        .stone { width: 26px; height: 26px; border-radius: 50%; position: relative; z-index: 2; box-shadow: 0 3px 6px rgba(0,0,0,0.4); }
+        .stone.black { background: radial-gradient(circle at 30% 30%, #555, #000 70%); }
+        .stone.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc 70%); border: 1px solid #aaa; }
+        .win-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 12, 27, 0.85); backdrop-filter: blur(10px); z-index: 999; justify-content: center; align-items: center; flex-direction: column; }
+        .win-modal { background: linear-gradient(135deg, #1f1c2c, #928dab); padding: 40px 60px; border-radius: 20px; text-align: center; border: 2px solid #00ffff; box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
+        .win-title { font-size: 2.5rem; color: #ffcc00; margin-bottom: 30px; }
+        .modal-btns { display: flex; gap: 20px; justify-content: center; }
+        .btn-home { background: linear-gradient(45deg, #4b6cb7, #182848); }
+        .rules-card { margin-top: 25px; max-width: 550px; background: rgba(255, 255, 255, 0.05); padding: 15px 20px; border-radius: 10px; color: #ccc; border-left: 4px solid #00ffff; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -199,7 +59,7 @@
 
     <div class="rules-card">
         <h3 style="margin-top:0; color:#fff;">💡 當前模式指南：</h3>
-        <p id="game-desc">說明載入中...</p>
+        <p id="game-desc">載入中...</p>
     </div>
 
     <div id="win-overlay" class="win-overlay">
@@ -213,8 +73,7 @@
     </div>
 
     <script>
-        // 用最安全的方式確保 DOM 完全載入後才執行遊戲
-        function startChessCenter() {
+        document.addEventListener("DOMContentLoaded", function() {
             const boardElement = document.getElementById('board');
             const gameSelect = document.getElementById('game-select');
             const modeSelect = document.getElementById('mode-select');
@@ -226,283 +85,4 @@
             const modalNextBtn = document.getElementById('modal-next-btn');
             const modalHomeBtn = document.getElementById('modal-home-btn');
 
-            let boardSize = 15;
-            let currentGame = 'gomoku';
-            let gameMode = 'pvp'; 
-            let playerColor = 'black'; 
-            let currentPlayer = 'black'; 
-            let boardState = []; 
-            let gameOver = false;
-            let isAiThinking = false;
-
-            const descriptions = {
-                gomoku: "【五子棋】先連成五子者勝。選擇先手你執黑子先下；選擇後手你執白子，電腦黑子會先落子。",
-                othello: "【黑白棋】夾住敵子即可翻轉。選擇先手你執黑，後手執白。最後棋子多者勝。",
-                go: "【圍棋體驗】19x19 大棋盤。適合雙人對弈排局，或與電腦進行基礎圍地練習。"
-            };
-
-            function initGame() {
-                currentGame = gameSelect.value;
-                gameMode = modeSelect.value;
-                gameOver = false;
-                isAiThinking = false;
-                currentPlayer = 'black'; 
-                winOverlay.style.display = 'none'; 
-
-                if (gameMode === 'pve-second') {
-                    playerColor = 'white'; 
-                } else {
-                    playerColor = 'black'; 
-                }
-                
-                let colorName = currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子';
-                if (gameMode === 'pvp') {
-                    statusElement.innerText = `輪到：${colorName}`;
-                } else {
-                    statusElement.innerText = currentPlayer === playerColor ? `輪到：${colorName} (你)` : `🤖 電腦思考中...`;
-                }
-
-                descElement.innerText = descriptions[currentGame];
-
-                if (currentGame === 'gomoku') boardSize = 15;
-                else if (currentGame === 'othello') boardSize = 8;
-                else if (currentGame === 'go') boardSize = 19;
-
-                boardState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
-
-                if (currentGame === 'othello') {
-                    const mid = boardSize / 2;
-                    boardState[mid-1][mid-1] = 'white';
-                    boardState[mid][mid] = 'white';
-                    boardState[mid-1][mid] = 'black';
-                    boardState[mid][mid-1] = 'black';
-                }
-
-                renderBoard();
-
-                if (gameMode === 'pve-second' && currentPlayer === 'black') {
-                    isAiThinking = true;
-                    setTimeout(makeAiMove, 500);
-                }
-            }
-
-            function renderBoard() {
-                boardElement.innerHTML = '';
-                boardElement.style.gridTemplateColumns = `repeat(${boardSize}, 35px)`;
-                boardElement.style.gridTemplateRows = `repeat(${boardSize}, 35px)`;
-
-                for (let r = 0; r < boardSize; r++) {
-                    for (let c = 0; c < boardSize; c++) {
-                        const cell = document.createElement('div');
-                        cell.classList.add('cell');
-
-                        if (boardState[r][c]) {
-                            const stone = document.createElement('div');
-                            stone.classList.add('stone', boardState[r][c]);
-                            cell.appendChild(stone);
-                        }
-
-                        cell.addEventListener('click', () => {
-                            if (gameOver || isAiThinking || boardState[r][c]) return;
-                            if (gameMode !== 'pvp' && currentPlayer !== playerColor) return; 
-                            executeMove(r, c);
-                        });
-                        boardElement.appendChild(cell);
-                    }
-                }
-            }
-
-            function executeMove(r, c) {
-                if (currentGame === 'gomoku' || currentGame === 'go') {
-                    boardState[r][c] = currentPlayer;
-                    renderBoard();
-
-                    if (currentGame === 'gomoku' && checkWin(r, c, currentPlayer)) {
-                        gameOver = true;
-                        winMessage.innerText = currentPlayer === 'black' ? '⚫ 黑子獲勝！' : '⚪ 白子獲勝！';
-                        winOverlay.style.display = 'flex';
-                        return;
-                    }
-                    proceedTurn();
-                } 
-                else if (currentGame === 'othello') {
-                    const flipped = flipOthelloStones(r, c, currentPlayer, true);
-                    if (flipped > 0) {
-                        boardState[r][c] = currentPlayer;
-                        renderBoard();
-                        if (boardState.every(row => row.every(cell => cell !== null)) || (!hasValidMoves('black') && !hasValidMoves('white'))) {
-                            let b = 0, w = 0;
-                            for (let i = 0; i < boardSize; i++) {
-                                for (let j = 0; j < boardSize; j++) {
-                                    if (boardState[i][j] === 'black') b++;
-                                    if (boardState[i][j] === 'white') w++;
-                                }
-                            }
-                            gameOver = true;
-                            winMessage.innerText = b > w ? `🏁 黑子獲勝 (${b} vs ${w})` : (w > b ? `🏁 白子獲勝 (${w} vs ${b})` : `🏁 雙方平手 (${b} vs ${w})`);
-                            winOverlay.style.display = 'flex';
-                        } else {
-                            proceedTurn();
-                        }
-                    } else if (gameMode === 'pvp' || currentPlayer === playerColor) {
-                        alert("這裡不能放喔！必須能夾住並翻轉對手的棋子。");
-                    }
-                }
-            }
-
-            function proceedTurn() {
-                currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
-                let colorName = currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子';
-                if (gameMode === 'pvp') {
-                    statusElement.innerText = `輪到：${colorName}`;
-                } else {
-                    statusElement.innerText = currentPlayer === playerColor ? `輪到：${colorName} (你)` : `🤖 電腦思考中...`;
-                }
-
-                if (gameMode !== 'pvp' && currentPlayer !== playerColor && !gameOver) {
-                    isAiThinking = true;
-                    setTimeout(makeAiMove, 500);
-                }
-            }
-
-            function makeAiMove() {
-                if (gameOver) return;
-                let targetR = -1, targetC = -1;
-                let aiColor = playerColor === 'black' ? 'white' : 'black';
-
-                if (currentGame === 'gomoku') {
-                    let maxScore = -1;
-                    for (let r = 0; r < boardSize; r++) {
-                        for (let c = 0; c < boardSize; c++) {
-                            if (!boardState[r][c]) {
-                                let score = (boardSize/2 - Math.abs(r - boardSize/2)) + (boardSize/2 - Math.abs(c - boardSize/2));
-                                const neighbors = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,1],[-1,1],[1,-1]];
-                                for (let [dr, dc] of neighbors) {
-                                    let nr = r + dr, nc = c + dc;
-                                    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc]) {
-                                        score += boardState[nr][nc] === aiColor ? 15 : 10; 
-                                    }
-                                }
-                                if (score > maxScore) { maxScore = score; targetR = r; targetC = c; }
-                            }
-                        }
-                    }
-                } 
-                else if (currentGame === 'othello') {
-                    let maxFlips = 0;
-                    for (let r = 0; r < boardSize; r++) {
-                        for (let c = 0; c < boardSize; c++) {
-                            if (!boardState[r][c]) {
-                                let flips = flipOthelloStones(r, c, aiColor, false);
-                                if (flips > maxFlips) { maxFlips = flips; targetR = r; targetC = c; }
-                            }
-                        }
-                    }
-                    if (maxFlips === 0) { isAiThinking = false; proceedTurn(); return; }
-                } 
-                else if (currentGame === 'go') {
-                    let candidates = [];
-                    for (let r = 0; r < boardSize; r++) {
-                        for (let c = 0; c < boardSize; c++) {
-                            if (boardState[r][c] === playerColor) {
-                                const neighbors = [[r-1,c], [r+1,c], [r,c-1], [r,c+1]];
-                                for (let [nr, nc] of neighbors) {
-                                    if (nr>=0 && nr<boardSize && nc>=0 && nc<boardSize && !boardState[nr][nc]) candidates.push([nr, nc]);
-                                }
-                            }
-                        }
-                    }
-                    if (candidates.length > 0) {
-                        const pick = candidates[Math.floor(Math.random() * candidates.length)];
-                        targetR = pick[0]; targetC = pick[1];
-                    }
-                }
-
-                if (targetR === -1 || targetC === -1) {
-                    let emptyCells = [];
-                    for (let r = 0; r < boardSize; r++) {
-                        for (let c = 0; c < boardSize; c++) {
-                            if (!boardState[r][c]) emptyCells.push([r, c]);
-                        }
-                    }
-                    if (emptyCells.length > 0) {
-                        const pick = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-                        targetR = pick[0]; targetC = pick[1];
-                    }
-                }
-
-                if (targetR !== -1 && targetC !== -1) {
-                    isAiThinking = false;
-                    executeMove(targetR, targetC);
-                } else {
-                    isAiThinking = false;
-                    currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
-                    proceedTurn();
-                }
-            }
-
-            function checkWin(r, c, player) {
-                const directions = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
-                for (let dir of directions) {
-                    let count = 1;
-                    for (let [dr, dc] of dir) {
-                        let nr = r + dr, nc = c + dc;
-                        while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === player) {
-                            count++; nr += dr; nc += dc;
-                        }
-                    }
-                    if (count >= 5) return true;
-                }
-                return false;
-            }
-
-            function flipOthelloStones(r, c, player, doFlip) {
-                const opponent = player === 'black' ? 'white' : 'black';
-                const directions = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
-                let totalFlipped = 0;
-                let stonesToFlip = [];
-                for (let [dr, dc] of directions) {
-                    let nr = r + dr, nc = c + dc;
-                    let currentDirStones = [];
-                    while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === opponent) {
-                        currentDirStones.push([nr, nc]); nr += dr; nc += dc;
-                    }
-                    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === player) {
-                        if (currentDirStones.length > 0) stonesToFlip = stonesToFlip.concat(currentDirStones);
-                    }
-                }
-                if (doFlip) {
-                    for (let [fr, fc] of stonesToFlip) { boardState[fr][fc] = player; totalFlipped++; }
-                } else {
-                    totalFlipped = stonesToFlip.length;
-                }
-                return totalFlipped;
-            }
-
-            function hasValidMoves(player) {
-                for (let r = 0; r < boardSize; r++) {
-                    for (let c = 0; c < boardSize; c++) {
-                        if (!boardState[r][c] && flipOthelloStones(r, c, player, false) > 0) return true;
-                    }
-                }
-                return false;
-            }
-
-            modalNextBtn.addEventListener('click', initGame); 
-            modalHomeBtn.addEventListener('click', () => { window.location.reload(); });
-            gameSelect.addEventListener('change', initGame);
-            modeSelect.addEventListener('change', initGame);
-            restartBtn.addEventListener('click', initGame);
-
-            initGame();
-        }
-
-        // 用雙重保障確保網頁加載完畢才啟動
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', startChessCenter);
-        } else {
-            startChessCenter();
-        }
-    </script>
-</body>
-</html>
+            let boardSize =
