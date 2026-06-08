@@ -12,7 +12,7 @@
         select { background: #33334d; color: #fff; }
         button { background: linear-gradient(45deg, #ff00cc, #3333ff); color: white; }
         .status { font-size: 1.3rem; margin-bottom: 15px; color: #ffcc00; font-weight: bold; }
-        .board-container { padding: 10px; background: #8b5a2b; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .board-container { padding: 10px; background: #8b5a2b; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-top: 15px; }
         #board { display: grid; background: #e4a853; border: 2px solid #4a3015; }
         .cell { width: 32px; height: 32px; position: relative; cursor: pointer; display: flex; justify-content: center; align-items: center; }
         .cell::before { content: ""; position: absolute; width: 100%; height: 1px; background: #4a3015; top: 50%; left: 0; }
@@ -136,4 +136,118 @@
             function updateStatus() {
                 if (gameOver) return;
                 let name = currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子';
-                statusElement.innerText = (gameMode === 'pvp') ? `輪到：${name}` : (currentPlayer === playerColor ? `輪到：${name} (你)` : `🤖
+                statusElement.innerText = (gameMode === 'pvp') ? `輪到：${name}` : (currentPlayer === playerColor ? `輪到：${name} (你)` : `🤖 電腦思考中...`);
+            }
+
+            function renderBoard() {
+                boardElement.innerHTML = '';
+                boardElement.style.gridTemplateColumns = `repeat(${boardSize}, 32px)`;
+                boardElement.style.gridTemplateRows = `repeat(${boardSize}, 32px)`;
+
+                for (let r = 0; r < boardSize; r++) {
+                    for (let c = 0; c < boardSize; c++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('cell');
+                        if (boardState[r][c]) {
+                            const stone = document.createElement('div');
+                            stone.classList.add('stone', boardState[r][c]);
+                            cell.appendChild(stone);
+                        }
+                        cell.addEventListener('click', () => {
+                            if (gameOver || isAiThinking || boardState[r][c]) return;
+                            if (gameMode !== 'pvp' && currentPlayer !== playerColor) return; 
+                            executeMove(r, c);
+                        });
+                        boardElement.appendChild(cell);
+                    }
+                }
+            }
+
+            function executeMove(r, c) {
+                if (currentGame === 'gomoku') {
+                    boardState[r][c] = currentPlayer;
+                    renderBoard();
+                    if (checkWin(r, c, currentPlayer)) {
+                        endGame(currentPlayer === 'black' ? '⚫ 黑子獲勝！' : '⚪ 白子獲勝！');
+                        return;
+                    }
+                    switchTurn();
+                } 
+                else if (currentGame === 'go') {
+                    boardState[r][c] = currentPlayer;
+                    let opponent = currentPlayer === 'black' ? 'white' : 'black';
+                    let capturedAny = false;
+                    
+                    for (let i = 0; i < boardSize; i++) {
+                        for (let j = 0; j < boardSize; j++) {
+                            if (boardState[i][j] === opponent) {
+                                let group = [];
+                                if (getLibertyCount(i, j, opponent, group) === 0) {
+                                    group.forEach(pos => { boardState[pos.r][pos.c] = null; });
+                                    capturedAny = true;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (!capturedAny) {
+                        let selfGroup = [];
+                        if (getLibertyCount(r, c, currentPlayer, selfGroup) === 0) {
+                            boardState[r][c] = null; 
+                            if (gameMode === 'pvp' || currentPlayer === playerColor) {
+                                alert("這裡沒有氣了，不能自殺下法喔！");
+                            }
+                            return;
+                        }
+                    }
+
+                    renderBoard();
+                    switchTurn();
+                } 
+                else if (currentGame === 'othello') {
+                    if (flipStones(r, c, currentPlayer, true) > 0) {
+                        boardState[r][c] = currentPlayer;
+                        renderBoard();
+                        if (boardState.every(row => row.every(cell => cell !== null)) || (!hasMoves('black') && !hasMoves('white'))) {
+                            let b = 0, w = 0;
+                            for(let i=0;i<boardSize;i++) for(let j=0;j<boardSize;j++) { if(boardState[i][j]==='black') b++; if(boardState[i][j]==='white') w++; }
+                            endGame(b > w ? `🏁 黑子獲勝 (${b} vs ${w})` : (w > b ? `🏁 白子獲勝 (${w} vs ${b})` : `🏁 雙方平手 (${b} vs ${w})`));
+                        } else {
+                            switchTurn();
+                        }
+                    } else if (gameMode === 'pvp' || currentPlayer === playerColor) {
+                        alert("這裡不能放喔！必須能翻轉對手的棋子。");
+                    }
+                }
+            }
+
+            function getLibertyCount(startR, startC, color, outGroup) {
+                let visited = Array(boardSize).fill(null).map(() => Array(boardSize).fill(false));
+                let queue = [{r: startR, c: startC}];
+                visited[startR][startC] = true;
+                let liberties = new Set();
+                let dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+
+                while(queue.length > 0) {
+                    let curr = queue.shift();
+                    outGroup.push(curr);
+
+                    for(let [dr, dc] of dirs) {
+                        let nr = curr.r + dr, nc = curr.c + dc;
+                        if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+                            if (boardState[nr][nc] === null) {
+                                liberties.add(`${nr}_${nc}`); 
+                            } else if (boardState[nr][nc] === color && !visited[nr][nc]) {
+                                visited[nr][nc] = true;
+                                queue.push({r: nr, c: nc});
+                            }
+                        }
+                    }
+                }
+                return liberties.size;
+            }
+
+            function switchTurn() {
+                currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                updateStatus();
+                if (gameMode !== 'pvp'
