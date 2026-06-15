@@ -11,15 +11,29 @@
         select, button { padding: 10px 15px; font-size: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
         select { background: #33334d; color: #fff; }
         button { background: linear-gradient(45deg, #ff00cc, #3333ff); color: white; }
+        #go-finish-btn { background: linear-gradient(45deg, #00b4db, #0083b0); display: none; }
         .status { font-size: 1.3rem; margin-bottom: 15px; color: #ffcc00; font-weight: bold; }
-        .board-container { padding: 10px; background: #8b5a2b; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-top: 15px; }
+        .board-container { padding: 12px; background: #8b5a2b; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-top: 15px; }
         #board { display: grid; background: #e4a853; border: 2px solid #4a3015; }
-        .cell { width: 32px; height: 32px; position: relative; cursor: pointer; display: flex; justify-content: center; align-items: center; }
-        .cell::before { content: ""; position: absolute; width: 100%; height: 1px; background: #4a3015; top: 50%; left: 0; }
-        .cell::after { content: ""; position: absolute; width: 1px; height: 100%; background: #4a3015; left: 50%; top: 0; }
-        .stone { width: 28px; height: 28px; border-radius: 50%; position: relative; z-index: 2; box-shadow: 0 3px 6px rgba(0,0,0,0.4); }
+        
+        /* 動態格子尺寸控制 */
+        .cell { position: relative; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .size-gomoku, .size-go { width: 32px; height: 32px; }
+        .size-othello { width: 55px; height: 55px; border: 1px solid #4a3015; box-sizing: border-box; background: #2e8b57; } /* 黑白棋改用經典綠底大棋盤 */
+        
+        /* 圍棋與五子棋的線條 */
+        .cell.line-draw::before { content: ""; position: absolute; width: 100%; height: 1px; background: #4a3015; top: 50%; left: 0; }
+        .cell.line-draw::after { content: ""; position: absolute; width: 1px; height: 100%; background: #4a3015; left: 50%; top: 0; }
+        .size-othello::before, .size-othello::after { display: none; } /* 黑白棋不需要十字線 */
+
+        /* 棋子樣式動態調整 */
+        .stone { border-radius: 50%; position: relative; z-index: 2; box-shadow: 0 3px 6px rgba(0,0,0,0.4); }
+        .stone-small { width: 28px; height: 28px; }
+        .stone-large { width: 48px; height: 48px; }
+        
         .stone.black { background: radial-gradient(circle at 30% 30%, #555, #000 70%); }
         .stone.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc 70%); border: 1px solid #aaa; }
+        
         .win-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 12, 27, 0.9); z-index: 999; justify-content: center; align-items: center; flex-direction: column; }
         .win-modal { background: linear-gradient(135deg, #1f1c2c, #928dab); padding: 40px; border-radius: 20px; text-align: center; border: 2px solid #00ffff; }
         .win-title { font-size: 2.5rem; color: #ffcc00; margin-bottom: 30px; }
@@ -36,18 +50,19 @@
         <label for="game-select">遊戲：</label>
         <select id="game-select">
             <option value="gomoku">五子棋 (15x15)</option>
-            <option value="othello">黑白棋 (8x8)</option>
+            <option value="othello">黑白棋 (8x8 大棋盤)</option>
             <option value="go">圍棋體驗 (19x19)</option>
         </select>
 
         <label for="mode-select">模式：</label>
         <select id="mode-select">
-            <option value="pvp">👥 雙人對戰</option>
             <option value="pve-first">🤖 電腦對戰 (玩家先手)</option>
             <option value="pve-second">🤖 電腦對戰 (玩家後手)</option>
+            <option value="pvp">👥 雙人對戰</option>
         </select>
 
         <button id="restart-btn">重新開始</button>
+        <button id="go-finish-btn">🏁 圍棋下好點我算分</button>
     </div>
 
     <div id="game-status" class="status">輪到：⚫ 黑子</div>
@@ -77,6 +92,7 @@
             const gameSelect = document.getElementById('game-select');
             const modeSelect = document.getElementById('mode-select');
             const restartBtn = document.getElementById('restart-btn');
+            const goFinishBtn = document.getElementById('go-finish-btn');
             const statusElement = document.getElementById('game-status');
             const descElement = document.getElementById('game-desc');
             const winOverlay = document.getElementById('win-overlay');
@@ -86,7 +102,7 @@
 
             let boardSize = 15;
             let currentGame = 'gomoku';
-            let gameMode = 'pvp'; 
+            let gameMode = 'pve-first'; 
             let playerColor = 'black'; 
             let currentPlayer = 'black'; 
             let boardState = []; 
@@ -94,9 +110,9 @@
             let isAiThinking = false;
 
             const descriptions = {
-                gomoku: "【五子棋】先連成五子者勝。選擇先手你執黑先下；選擇後手你執白，電腦黑子會先落子。",
-                othello: "【黑白棋】夾住敵子即可翻轉。選擇先手你執黑，後手執白。最後棋子多者勝。",
-                go: "【圍棋體驗】19x19 大棋盤。具備自動「提子」功能！當棋盤填滿或雙方無法落子時，系統會自動數子（包含活子與圍地）結算輸贏。"
+                gomoku: "【五子棋】先連成五子者勝。防守型 AI 核心：只要你快連成線，電腦會使出渾身解數瘋狂進行攔截！",
+                othello: "【黑白棋】經典綠底大棋盤！夾住敵子即可翻轉。電腦會不計一切代價搶佔最外圍黃金角落，小心被大逆轉。",
+                go: "【圍棋體驗】自動提子（吃子）練習。下到差不多時，可隨時點擊上方藍色「圍棋下好點我算分」按鈕來進行數子結算輸贏。"
             };
 
             function initGame() {
@@ -110,9 +126,9 @@
                 playerColor = (gameMode === 'pve-second') ? 'white' : 'black';
                 descElement.innerText = descriptions[currentGame];
 
-                if (currentGame === 'gomoku') boardSize = 15;
-                else if (currentGame === 'othello') boardSize = 8;
-                else if (currentGame === 'go') boardSize = 19;
+                if (currentGame === 'gomoku') { boardSize = 15; goFinishBtn.style.display = 'none'; }
+                else if (currentGame === 'othello') { boardSize = 8; goFinishBtn.style.display = 'none'; }
+                else if (currentGame === 'go') { boardSize = 19; goFinishBtn.style.display = 'inline-block'; }
 
                 boardState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
 
@@ -146,8 +162,33 @@
 
             function renderBoard() {
                 boardElement.innerHTML = '';
-                boardElement.style.gridTemplateColumns = `repeat(${boardSize}, 32px)`;
-                boardElement.style.gridTemplateRows = `repeat(${boardSize}, 32px)`;
+                
+                let cellClass = 'size-gomoku';
+                let stoneClass = 'stone-small';
+                if (currentGame === 'gomoku') {
+                    cellClass = 'size-gomoku line-draw';
+                    boardElement.style.gridTemplateColumns = `repeat(15, 32px)`;
+                } else if (currentGame === 'go') {
+                    cellClass = 'size-go line-draw';
+                    boardElement.style.gridTemplateColumns = `repeat(19, 32px)`;
+                } else if (currentGame === 'othello') {
+                    cellClass = 'size-othello';
+                    stoneClass = 'stone-large';
+                    boardElement.style.gridTemplateColumns = `repeat(8, 55px)`;
+                }
 
                 for (let r = 0; r < boardSize; r++) {
                     for (let c = 0; c < boardSize; c++) {
+                        const cell = document.createElement('div');
+                        cell.className = `cell ${cellClass}`;
+                        
+                        if (boardState[r][c]) {
+                            const stone = document.createElement('div');
+                            stone.className = `stone ${stoneClass} ${boardState[r][c]}`;
+                            cell.appendChild(stone);
+                        }
+                        
+                        cell.addEventListener('click', () => {
+                            if (gameOver || isAiThinking || boardState[r][c]) return;
+                            if (gameMode !== 'pvp' && currentPlayer !== playerColor) return; 
+                            executeMove(
