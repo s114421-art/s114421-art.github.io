@@ -16,17 +16,13 @@
         .board-container { padding: 12px; background: #8b5a2b; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-top: 15px; }
         #board { display: grid; background: #e4a853; border: 2px solid #4a3015; }
         
-        /* 動態格子尺寸控制 */
         .cell { position: relative; cursor: pointer; display: flex; justify-content: center; align-items: center; }
         .size-gomoku, .size-go { width: 32px; height: 32px; }
-        .size-othello { width: 55px; height: 55px; border: 1px solid #4a3015; box-sizing: border-box; background: #2e8b57; } /* 黑白棋改用經典綠底大棋盤 */
+        .size-othello { width: 55px; height: 55px; border: 1px solid #4a3015; box-sizing: border-box; background: #2e8b57; } 
         
-        /* 圍棋與五子棋的線條 */
         .cell.line-draw::before { content: ""; position: absolute; width: 100%; height: 1px; background: #4a3015; top: 50%; left: 0; }
         .cell.line-draw::after { content: ""; position: absolute; width: 1px; height: 100%; background: #4a3015; left: 50%; top: 0; }
-        .size-othello::before, .size-othello::after { display: none; } /* 黑白棋不需要十字線 */
 
-        /* 棋子樣式動態調整 */
         .stone { border-radius: 50%; position: relative; z-index: 2; box-shadow: 0 3px 6px rgba(0,0,0,0.4); }
         .stone-small { width: 28px; height: 28px; }
         .stone-large { width: 48px; height: 48px; }
@@ -38,7 +34,6 @@
         .win-modal { background: linear-gradient(135deg, #1f1c2c, #928dab); padding: 40px; border-radius: 20px; text-align: center; border: 2px solid #00ffff; }
         .win-title { font-size: 2.5rem; color: #ffcc00; margin-bottom: 30px; }
         .modal-btns { display: flex; gap: 20px; justify-content: center; }
-        .btn-home { background: linear-gradient(45deg, #4b6cb7, #182848); }
         .rules-card { margin-top: 25px; max-width: 550px; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; color: #ccc; border-left: 4px solid #00ffff; line-height: 1.6; }
     </style>
 </head>
@@ -81,7 +76,6 @@
             <div id="win-message" class="win-title">🎉 黑子獲勝！</div>
             <div class="modal-btns">
                 <button id="modal-next-btn">再下一局</button>
-                <button id="modal-home-btn" class="btn-home">回首頁選單</button>
             </div>
         </div>
     </div>
@@ -98,7 +92,6 @@
             const winOverlay = document.getElementById('win-overlay');
             const winMessage = document.getElementById('win-message');
             const modalNextBtn = document.getElementById('modal-next-btn');
-            const modalHomeBtn = document.getElementById('modal-home-btn');
 
             let boardSize = 15;
             let currentGame = 'gomoku';
@@ -191,4 +184,261 @@
                         cell.addEventListener('click', () => {
                             if (gameOver || isAiThinking || boardState[r][c]) return;
                             if (gameMode !== 'pvp' && currentPlayer !== playerColor) return; 
-                            executeMove(
+                            executeMove(r, c);
+                        });
+                        boardElement.appendChild(cell);
+                    }
+                }
+            }
+
+            function executeMove(r, c) {
+                if (currentGame === 'gomoku') {
+                    boardState[r][c] = currentPlayer;
+                    renderBoard();
+                    if (checkWin(r, c, currentPlayer)) {
+                        endGame(currentPlayer === 'black' ? '⚫ 黑子獲勝！' : '⚪ 白子獲勝！');
+                        return;
+                    }
+                    switchTurn();
+                } 
+                else if (currentGame === 'go') {
+                    boardState[r][c] = currentPlayer;
+                    let opponent = currentPlayer === 'black' ? 'white' : 'black';
+                    
+                    for (let i = 0; i < boardSize; i++) {
+                        for (let j = 0; j < boardSize; j++) {
+                            if (boardState[i][j] === opponent) {
+                                let group = [];
+                                if (getLibertyCount(i, j, opponent, group) === 0) {
+                                    group.forEach(pos => { boardState[pos.r][pos.c] = null; });
+                                }
+                            }
+                        }
+                    }
+                    renderBoard();
+                    switchTurn();
+                } 
+                else if (currentGame === 'othello') {
+                    if (flipStones(r, c, currentPlayer, true) > 0) {
+                        boardState[r][c] = currentPlayer;
+                        renderBoard();
+                        if (boardState.every(row => row.every(cell => cell !== null)) || (!hasMoves('black') && !hasMoves('white'))) {
+                            let b = 0, w = 0;
+                            for(let i=0;i<boardSize;i++) for(let j=0;j<boardSize;j++) { if(boardState[i][j]==='black') b++; if(boardState[i][j]==='white') w++; }
+                            endGame(b > w ? `🏁 黑子獲勝 (${b} vs ${w})` : (w > b ? `🏁 白子獲勝 (${w} vs ${b})` : `🏁 雙方平手 (${b} vs ${w})`));
+                        } else {
+                            switchTurn();
+                        }
+                    } else if (gameMode === 'pvp' || currentPlayer === playerColor) {
+                        alert("這裡不能放喔！必須能翻轉對手的棋子。");
+                    }
+                }
+            }
+
+            function getLibertyCount(startR, startC, color, outGroup) {
+                let visited = Array(boardSize).fill(null).map(() => Array(boardSize).fill(false));
+                let queue = [{r: startR, c: startC}];
+                visited[startR][startC] = true;
+                let liberties = new Set();
+                let dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+
+                while(queue.length > 0) {
+                    let curr = queue.shift();
+                    outGroup.push(curr);
+
+                    for(let i=0; i<dirs.length; i++) {
+                        let nr = curr.r + dirs[i][0], nc = curr.c + dirs[i][1];
+                        if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+                            if (boardState[nr][nc] === null) {
+                                liberties.add(`${nr}_${nc}`); 
+                            } else if (boardState[nr][nc] === color && !visited[nr][nc]) {
+                                visited[nr][nc] = true;
+                                queue.push({r: nr, c: nc});
+                            }
+                        }
+                    }
+                }
+                return liberties.size;
+            }
+
+            function judgeGoWinner() {
+                let blackPoints = 0, whitePoints = 0;
+                for (let r = 0; r < boardSize; r++) {
+                    for (let c = 0; c < boardSize; c++) {
+                        if (boardState[r][c] === 'black') blackPoints++;
+                        else if (boardState[r][c] === 'white') whitePoints++;
+                        else {
+                            let bDist = 0, wDist = 0;
+                            const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                            for(let i=0; i<dirs.length; i++) {
+                                let p = getPiece(r+dirs[i][0], c+dirs[i][1]);
+                                if (p === 'black') bDist++; if (p === 'white') wDist++;
+                            }
+                            if (bDist > wDist) blackPoints++; else if (wDist > bDist) whitePoints++;
+                        }
+                    }
+                }
+                whitePoints += 6.5; 
+                endGame(blackPoints > whitePoints ? 
+                    `🏁 圍棋結算：⚫ 黑子獲勝！(${blackPoints} 目 vs 白子 ${whitePoints} 目)` : 
+                    `🏁 圍棋結算：⚪ 白子獲勝！(${whitePoints} 目 vs 黑子 ${blackPoints} 目)`
+                );
+            }
+
+            function switchTurn() {
+                currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                updateStatus();
+                if (gameMode !== 'pvp' && currentPlayer !== playerColor && !gameOver) {
+                    isAiThinking = true;
+                    setTimeout(makeAiMove, 300);
+                }
+            }
+
+            function endGame(msg) {
+                gameOver = true;
+                isAiThinking = false;
+                winMessage.innerText = msg;
+                winOverlay.style.display = 'flex';
+                statusElement.innerText = "🎮 遊戲結束";
+            }
+
+            function makeAiMove() {
+                if (gameOver) return;
+                let targetR = -1, targetC = -1;
+                let aiColor = playerColor === 'black' ? 'white' : 'black';
+
+                if (currentGame === 'gomoku') {
+                    let maxScore = -1;
+                    for (let r = 0; r < boardSize; r++) {
+                        for (let c = 0; c < boardSize; c++) {
+                            if (!boardState[r][c]) {
+                                let score = (boardSize/2 - Math.abs(r - boardSize/2)) + (boardSize/2 - Math.abs(c - boardSize/2));
+                                const dirs = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
+                                
+                                for (let i=0; i<dirs.length; i++) {
+                                    let d = dirs[i];
+                                    let aiCount = 0;
+                                    let playerCount = 0;
+                                    for (let j=0; j<d.length; j++) {
+                                        let dr = d[j][0], dc = d[j][1];
+                                        let nr = r + dr, nc = c + dc;
+                                        while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+                                            if (boardState[nr][nc] === aiColor) aiCount++;
+                                            else if (boardState[nr][nc] === playerColor) playerCount++;
+                                            else break;
+                                            nr += dr; nc += dc;
+                                        }
+                                    }
+                                    
+                                    if (playerCount >= 4) score += 999999;
+                                    else if (playerCount >= 3) score += 80000; 
+                                    else if (playerCount >= 2) score += 5000;
+                                    
+                                    if (aiCount >= 4) score += 900000;
+                                    else if (aiCount >= 3) score += 40000;
+                                    else if (aiCount >= 2) score += 1000;
+                                }
+                                if (score > maxScore) { maxScore = score; targetR = r; targetC = c; }
+                            }
+                        }
+                    }
+                } else if (currentGame === 'othello') {
+                    let maxScore = -1;
+                    for (let r = 0; r < boardSize; r++) {
+                        for (let c = 0; c < boardSize; c++) {
+                            if (!boardState[r][c]) {
+                                let flips = flipStones(r, c, aiColor, false);
+                                if (flips > 0) {
+                                    let score = flips;
+                                    if ((r === 0 || r === boardSize-1) && (c === 0 || c === boardSize-1)) score += 200;
+                                    else if (r === 0 || r === boardSize-1 || c === 0 || c === boardSize-1) score += 40;
+                                    if (score > maxScore) { maxScore = score; targetR = r; targetC = c; }
+                                }
+                            }
+                        }
+                    }
+                    if (maxScore === -1) { isAiThinking = false; switchTurn(); return; }
+                } else if (currentGame === 'go') {
+                    let maxGoScore = -10000;
+                    for (let r = 0; r < boardSize; r++) {
+                        for (let c = 0; c < boardSize; c++) {
+                            if (!boardState[r][c]) {
+                                boardState[r][c] = aiColor;
+                                let tempGroup = [];
+                                let liberties = getLibertyCount(r, c, aiColor, tempGroup);
+                                boardState[r][c] = null; 
+                                
+                                if (liberties > 1) { 
+                                    let goScore = 0;
+                                    goScore += (10 - Math.abs(r - 9)) + (10 - Math.abs(c - 9));
+                                    const neighbors = [[-1,0],[1,0],[0,-1],[0,1]];
+                                    for (let idx = 0; idx < neighbors.length; idx++) {
+                                        let currentPiece = getPiece(r + neighbors[idx][0], c + neighbors[idx][1]);
+                                        if (currentPiece === playerColor) goScore += 60; 
+                                        else if (currentPiece === aiColor) goScore += 30; 
+                                    }
+                                    if (goScore > maxGoScore) { maxGoScore = goScore; targetR = r; targetC = c; }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (targetR === -1 || targetC === -1) {
+                    let empty = [];
+                    for(let r=0; r<boardSize; r++) for(let c=0; c<boardSize; c++) if(!boardState[r][c]) empty.push([r,c]);
+                    if (empty.length > 0) {
+                        empty.sort(() => Math.random() - 0.5);
+                        targetR = empty[0][0]; targetC = empty[0][1];
+                    }
+                }
+
+                isAiThinking = false;
+                if (targetR !== -1 && targetC !== -1) executeMove(targetR, targetC);
+                else { if (currentGame === 'go') judgeGoWinner(); else switchTurn(); }
+            }
+
+            function checkWin(r, c, p) {
+                const dirs = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
+                for (let i=0; i<dirs.length; i++) {
+                    let count = 1;
+                    for (let j=0; j<dirs[i].length; j++) {
+                        let nr = r + dirs[i][j][0], nc = c + dirs[i][j][1];
+                        while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === p) { 
+                            count++; 
+                            nr += dirs[i][j][0]; 
+                            nc += dirs[i][j][1]; 
+                        }
+                    }
+                    if (count >= 5) return true;
+                }
+                return false;
+            }
+
+            function flipStones(r, c, p, doFlip) {
+                const opp = p === 'black' ? 'white' : 'black';
+                const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+                let total = 0, toFlip = [];
+                for (let i=0; i<dirs.length; i++) {
+                    let nr = r + dirs[i][0], nc = c + dirs[i][1], current = [];
+                    while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === opp) { current.push([nr, nc]); nr += dirs[i][0]; nc += dirs[i][1]; }
+                    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === p && current.length > 0) toFlip = toFlip.concat(current);
+                }
+                if (doFlip) { for (let i=0; i<toFlip.length; i++) { boardState[toFlip[i][0]][toFlip[i][1]] = p; total++; } }
+                else total = toFlip.length;
+                return total;
+            }
+
+            function hasMoves(p) { for (let r = 0; r < boardSize; r++) for (let c = 0; c < boardSize; c++) if (!boardState[r][c] && flipStones(r, c, p, false) > 0) return true; return false; }
+
+            modalNextBtn.addEventListener('click', initGame);
+            gameSelect.addEventListener('change', initGame);
+            modeSelect.addEventListener('change', initGame);
+            restartBtn.addEventListener('click', initGame);
+            goFinishBtn.addEventListener('click', judgeGoWinner);
+
+            initGame();
+        };
+    </script>
+</body>
+</html>
