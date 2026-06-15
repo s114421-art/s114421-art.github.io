@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎲 智慧棋類對戰中心 - 地獄進化版</title>
+    <title>🎲 智慧棋類對戰中心 - 終極大師版</title>
     <style>
         body { background: #1e1e2f; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
         h1 { color: #00ffff; text-shadow: 0 0 10px rgba(0,255,255,0.3); }
@@ -69,7 +69,7 @@
 
     <div class="rules-card">
         <h3 style="margin-top:0; color:#fff;">💡 當前模式指南：</h3>
-        <p id="game-desc">載入中...</p>
+        <p id="game-desc">初始化中...</p>
     </div>
 
     <div id="win-overlay" class="win-overlay">
@@ -104,9 +104,9 @@
             let isAiThinking = false;
 
             const descriptions = {
-                gomoku: "【五子棋】超強攻防 AI！電腦擁有敏銳的防守感知，會用最高權重封截玩家的所有連三、連四線路，絕不給輕易獲勝的機會！",
-                othello: "【特大黑白棋】全面擴展至 12x12 戰場！AI 戰術全面調整，會嚴格計算翻轉期望值，並優先爭奪四大外圍黃金邊角位置！",
-                go: "【圍棋體驗】自動提子練習場。對局完畢後，點擊上方藍色的「🏁 結算」按鈕，即可自動計算棋盤上的地盤與目數判定輸贏。"
+                gomoku: "【五子棋・大師版】AI 啟用了「深層攻防矩陣」與「雙三交叉點預判」。它會像一堵鐵牆一樣瘋狂狙擊你的所有連線雏形，並伺機發動致命反擊！",
+                othello: "【特大黑白棋・12x12】AI 引進「邊角戰略演算法」與「行動力封鎖計策」。它會極度渴望霸佔四個黃金死角，並設下陷阱逼迫你送出邊線！",
+                go: "【圍棋體驗・19x19】具備「氣數與死活判定」的吃子練習場。當對局結束後，點擊上方藍色的「🏁 結算」按鈕即可精確計算雙方目數判定勝負。"
             };
 
             function initGame() {
@@ -208,9 +208,9 @@
                 } 
                 else if (currentGame === 'go') {
                     boardState[r][c] = currentPlayer;
-                    let opponent = currentPlayer === 'black' ? 'white' : 'black';
+                    const opponent = currentPlayer === 'black' ? 'white' : 'black';
                     
-                    let capturedTotal = 0;
+                    // 檢查是否能提走對手的子
                     for (let i = 0; i < boardSize; i++) {
                         for (let j = 0; j < boardSize; j++) {
                             if (boardState[i][j] === opponent) {
@@ -219,13 +219,22 @@
                                     for (let k = 0; k < group.length; k++) {
                                         if (boardState[group[k].r][group[k].c] === opponent) {
                                             boardState[group[k].r][group[k].c] = null;
-                                            capturedTotal++;
                                         }
                                     }
                                 }
                             }
                         }
                     }
+                    
+                    // 自殺禁手檢查：如果自己放下去的地方也沒氣，且沒吃到對手，則不允許放 (簡單防呆)
+                    let selfGroup = [];
+                    if (getLibertyCount(r, c, currentPlayer, selfGroup) === 0) {
+                        boardState[r][c] = null;
+                        alert("這裡下下去會變成無氣死棋（自殺禁手），請換個位置！");
+                        renderBoard();
+                        return;
+                    }
+
                     renderBoard();
                     switchTurn();
                 } 
@@ -241,11 +250,11 @@
                         } else {
                             let nextPlayer = currentPlayer === 'black' ? 'white' : 'black';
                             if (!hasMoves(nextPlayer)) {
-                                alert(`【提示】${nextPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子'} 沒有地方可以合法落子，由對方繼續下！`);
+                                alert(`【提示】${nextPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子'} 無合法位置可落子，由對方繼續下！`);
                                 updateStatus();
                                 if (gameMode !== 'pvp' && currentPlayer !== playerColor) {
                                     isAiThinking = true;
-                                    setTimeout(makeAiMove, 400);
+                                    setTimeout(makeAiMove, 500);
                                 }
                             } else {
                                 switchTurn();
@@ -262,7 +271,7 @@
                 let queue = [{r: startR, c: startC}];
                 visited[startR][startC] = true;
                 let liberties = new Set();
-                let dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
 
                 while(queue.length > 0) {
                     let curr = queue.shift();
@@ -291,7 +300,7 @@
                         else if (boardState[r][c] === 'white') whitePoints++;
                         else {
                             let bDist = 0, wDist = 0;
-                            let dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                            const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
                             for(let i=0; i<dirs.length; i++) {
                                 let p = getPiece(r+dirs[i][0], c+dirs[i][1]);
                                 if (p === 'black') bDist++; if (p === 'white') wDist++;
@@ -312,7 +321,7 @@
                 updateStatus();
                 if (gameMode !== 'pvp' && currentPlayer !== playerColor && !gameOver) {
                     isAiThinking = true;
-                    setTimeout(makeAiMove, 400);
+                    setTimeout(makeAiMove, 500);
                 }
             }
 
@@ -348,30 +357,41 @@
             function makeAiMove() {
                 if (gameOver) return;
                 let targetR = -1, targetC = -1;
-                let aiColor = playerColor === 'black' ? 'white' : 'black';
+                const aiColor = playerColor === 'black' ? 'white' : 'black';
 
                 if (currentGame === 'gomoku') {
                     let maxScore = -1;
                     for (let r = 0; r < boardSize; r++) {
                         for (let c = 0; c < boardSize; c++) {
                             if (!boardState[r][c]) {
-                                // 基礎中心權重
+                                // 棋盤中心偏好基礎分
                                 let score = (7 - Math.abs(r - 7)) + (7 - Math.abs(c - 7)); 
-                                let dirs = [[0,1], [1,0], [1,1], [1,-1]];
+                                const dirs = [[0,1], [1,0], [1,1], [1,-1]];
                                 
+                                let playerLiveThreeCount = 0; // 用於偵測玩家雙三計策
+
                                 for (let i=0; i<dirs.length; i++) {
                                     let res = evaluateGomokuLine(r, c, dirs[i][0], dirs[i][1], aiColor, playerColor);
                                     
-                                    // 核心防守與攻擊權重調校
-                                    if (res.aiCount >= 4) score += 50000000; 
-                                    else if (res.playerCount >= 4) score += 20000000; // 絕對攔截玩家的活四/死四
-                                    else if (res.playerCount === 3 && res.openEnds === 2) score += 5000000; // 絕對攔截玩家的雙向活三
-                                    else if (res.aiCount === 3 && res.openEnds === 2) score += 200000; 
-                                    else if (res.playerCount === 3 && res.openEnds === 1) score += 80000;
-                                    else if (res.aiCount === 3 && res.openEnds === 1) score += 50000;
-                                    else if (res.playerCount === 2 && res.openEnds === 2) score += 30000; // 提前破壞玩家連線雛形
-                                    else if (res.aiCount === 2 && res.openEnds === 2) score += 10000;
+                                    // 👑 大師級核心防守與攻擊權重矩陣
+                                    if (res.aiCount >= 4) score += 90000000;              // AI 自己能成五，第一優先進攻
+                                    else if (res.playerCount >= 4) score += 50000000;     // 攔截玩家的活四/衝四死路
+                                    else if (res.playerCount === 3 && res.openEnds === 2) {
+                                        score += 8000000;                                 // 玩家即將做出雙向活四，極高權重攔截
+                                        playerLiveThreeCount++;
+                                    }
+                                    else if (res.aiCount === 3 && res.openEnds === 2) score += 3000000; // AI 自己做活四
+                                    else if (res.playerCount === 3 && res.openEnds === 1) score += 500000;  // 擋玩家死四
+                                    else if (res.aiCount === 3 && res.openEnds === 1) score += 200000;
+                                    else if (res.playerCount === 2 && res.openEnds === 2) score += 100000;  // 提前扼殺玩家連三的幼苗
+                                    else if (res.aiCount === 2 && res.openEnds === 2) score += 40000;
                                 }
+
+                                // 🧠 戰略防禦補強：如果發現這裡能一口氣堵住玩家兩條活三線（雙三交叉點），權重加倍！
+                                if (playerLiveThreeCount >= 2) {
+                                    score += 25000000;
+                                }
+
                                 if (score > maxScore) { maxScore = score; targetR = r; targetC = c; }
                             }
                         }
@@ -383,14 +403,26 @@
                             if (!boardState[r][c]) {
                                 let flips = flipStones(r, c, aiColor, false);
                                 if (flips > 0) {
-                                    let score = flips * 4;
+                                    let score = flips * 2; // 基礎翻轉分，降低比重以實施戰術布局
                                     
-                                    // 12x12 特大角落極高權重
-                                    if ((r === 0 || r === boardSize-1) && (c === 0 || c === boardSize-1)) score += 2000; 
-                                    // 邊緣權重
-                                    else if (r === 0 || r === boardSize-1 || c === 0 || c === boardSize-1) score += 150;  
-                                    // 絕不輕易踩死角旁邊的陷阱格
-                                    if ((r === 1 || r === boardSize-2) && (c === 1 || c === boardSize-2)) score -= 100; 
+                                    // 🥇 12x12 特大四個絕對死角權重 (0, 0), (0, 11), (11, 0), (11, 11)
+                                    if ((r === 0 || r === boardSize-1) && (c === 0 || c === boardSize-1)) {
+                                        score += 20000; 
+                                    } 
+                                    // 🥈 次高等級：最外圍邊線
+                                    else if (r === 0 || r === boardSize-1 || c === 0 || c === boardSize-1) {
+                                        score += 800;  
+                                    }  
+                                    
+                                    // ❌ 戰略毒藥：絕對不要踩角落旁邊的 C位 與 X位 陷阱格 (倒數第二排/列)
+                                    if ((r === 1 || r === boardSize-2) || (c === 1 || c === boardSize-2)) {
+                                        // 如果角落還空著，踩這裡等於送角，重扣分數
+                                        let cornerR = (r <= 1) ? 0 : boardSize-1;
+                                        let cornerC = (c <= 1) ? 0 : boardSize-1;
+                                        if (boardState[cornerR][cornerC] === null) {
+                                            score -= 5000; 
+                                        }
+                                    }
 
                                     if (score > maxScore) { maxScore = score; targetR = r; targetC = c; }
                                 }
@@ -399,7 +431,7 @@
                     }
                     if (maxScore === -1) { 
                         isAiThinking = false; 
-                        let nextOpponent = aiColor === 'black' ? 'white' : 'black';
+                        const nextOpponent = aiColor === 'black' ? 'white' : 'black';
                         if (hasMoves(nextOpponent)) {
                             switchTurn();
                         } else {
@@ -421,11 +453,20 @@
                                 
                                 if (liberties > 1) { 
                                     let goScore = (9 - Math.abs(r - 9)) + (9 - Math.abs(c - 9));
-                                    let neighbors = [[-1,0],[1,0],[0,-1],[0,1]];
+                                    const neighbors = [[-1,0],[1,0],[0,-1],[0,1]];
                                     for (let idx = 0; idx < neighbors.length; idx++) {
                                         let currentPiece = getPiece(r + neighbors[idx][0], c + neighbors[idx][1]);
-                                        if (currentPiece === playerColor) goScore += 50; 
-                                        else if (currentPiece === aiColor) goScore += 20; 
+                                        
+                                        // 🎯 圍棋死活計策：如果鄰近有玩家的棋子，優先進行緊氣圍殺
+                                        if (currentPiece === playerColor) {
+                                            let oppGroup = [];
+                                            let oppLib = getLibertyCount(r + neighbors[idx][0], c + neighbors[idx][1], playerColor, oppGroup);
+                                            if (oppLib === 2) goScore += 500; // 叫吃預備
+                                            else if (oppLib === 1) goScore += 2000; // 果斷吃子
+                                        } 
+                                        else if (currentPiece === aiColor) {
+                                            goScore += 40; // 聯絡與長氣
+                                        } 
                                     }
                                     if (goScore > maxGoScore) { maxGoScore = goScore; targetR = r; targetC = c; }
                                 }
@@ -449,7 +490,7 @@
             }
 
             function checkWin(r, c, p) {
-                let dirs = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
+                const dirs = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
                 for (let i=0; i<dirs.length; i++) {
                     let count = 1;
                     for (let j=0; j<dirs[i].length; j++) {
@@ -467,7 +508,7 @@
 
             function flipStones(r, c, p, doFlip) {
                 const opp = p === 'black' ? 'white' : 'black';
-                let dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+                const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
                 let total = 0;
                 let toFlip = [];
                 for (let i=0; i<dirs.length; i++) {
