@@ -210,7 +210,9 @@
                             if (boardState[i][j] === opponent) {
                                 let group = [];
                                 if (getLibertyCount(i, j, opponent, group) === 0) {
-                                    group.forEach(pos => { boardState[pos.r][pos.c] = null; });
+                                    for (let k = 0; k < group.length; k++) {
+                                        boardState[group[k].r][group[k].c] = null;
+                                    }
                                 }
                             }
                         }
@@ -269,7 +271,7 @@
                         else if (boardState[r][c] === 'white') whitePoints++;
                         else {
                             let bDist = 0, wDist = 0;
-                            const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+                            let dirs = [[-1,0],[1,0],[0,-1],[0,1]];
                             for(let i=0; i<dirs.length; i++) {
                                 let p = getPiece(r+dirs[i][0], c+dirs[i][1]);
                                 if (p === 'black') bDist++; if (p === 'white') wDist++;
@@ -313,7 +315,7 @@
                         for (let c = 0; c < boardSize; c++) {
                             if (!boardState[r][c]) {
                                 let score = (boardSize/2 - Math.abs(r - boardSize/2)) + (boardSize/2 - Math.abs(c - boardSize/2));
-                                const dirs = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
+                                let dirs = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
                                 
                                 for (let i=0; i<dirs.length; i++) {
                                     let d = dirs[i];
@@ -371,7 +373,7 @@
                                 if (liberties > 1) { 
                                     let goScore = 0;
                                     goScore += (10 - Math.abs(r - 9)) + (10 - Math.abs(c - 9));
-                                    const neighbors = [[-1,0],[1,0],[0,-1],[0,1]];
+                                    let neighbors = [[-1,0],[1,0],[0,-1],[0,1]];
                                     for (let idx = 0; idx < neighbors.length; idx++) {
                                         let currentPiece = getPiece(r + neighbors[idx][0], c + neighbors[idx][1]);
                                         if (currentPiece === playerColor) goScore += 60; 
@@ -399,7 +401,7 @@
             }
 
             function checkWin(r, c, p) {
-                const dirs = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
+                let dirs = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
                 for (let i=0; i<dirs.length; i++) {
                     let count = 1;
                     for (let j=0; j<dirs[i].length; j++) {
@@ -417,14 +419,27 @@
 
             function flipStones(r, c, p, doFlip) {
                 const opp = p === 'black' ? 'white' : 'black';
-                const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
-                let total = 0, toFlip = [];
+                let dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+                let total = 0;
+                let toFlip = [];
                 for (let i=0; i<dirs.length; i++) {
-                    let nr = r + dirs[i][0], nc = c + dirs[i][1], current = [];
-                    while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === opp) { current.push([nr, nc]); nr += dirs[i][0]; nc += dirs[i][1]; }
-                    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === p && current.length > 0) toFlip = toFlip.concat(current);
+                    let nr = r + dirs[i][0], nc = c + dirs[i][1];
+                    let current = [];
+                    while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === opp) { 
+                        current.push([nr, nc]); 
+                        nr += dirs[i][0]; 
+                        nc += dirs[i][1]; 
+                    }
+                    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === p && current.length > 0) {
+                        toFlip = toFlip.concat(current);
+                    }
                 }
-                if (doFlip) { for (let i=0; i<toFlip.length; i++) { boardState[toFlip[i][0]][toFlip[i][1]] = p; total++; } }
+                if (doFlip) { 
+                    for (let i=0; i<toFlip.length; i++) { 
+                        boardState[toFlip[i][0]][toFlip[i][1]] = p; 
+                        total++; 
+                    } 
+                }
                 else total = toFlip.length;
                 return total;
             }
