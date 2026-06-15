@@ -1,18 +1,284 @@
-function makeAiMove() {
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎲 智慧棋類對戰中心</title>
+    <style>
+        body { background: #1e1e2f; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        h1 { color: #00ffff; }
+        .controls { margin-bottom: 20px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 15px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; align-items: center; }
+        select, button { padding: 10px 15px; font-size: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
+        select { background: #33334d; color: #fff; }
+        button { background: linear-gradient(45deg, #ff00cc, #3333ff); color: white; }
+        .status { font-size: 1.3rem; margin-bottom: 15px; color: #ffcc00; font-weight: bold; }
+        .board-container { padding: 10px; background: #8b5a2b; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-top: 15px; }
+        #board { display: grid; background: #e4a853; border: 2px solid #4a3015; }
+        .cell { width: 32px; height: 32px; position: relative; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        .cell::before { content: ""; position: absolute; width: 100%; height: 1px; background: #4a3015; top: 50%; left: 0; }
+        .cell::after { content: ""; position: absolute; width: 1px; height: 100%; background: #4a3015; left: 50%; top: 0; }
+        .stone { width: 28px; height: 28px; border-radius: 50%; position: relative; z-index: 2; box-shadow: 0 3px 6px rgba(0,0,0,0.4); }
+        .stone.black { background: radial-gradient(circle at 30% 30%, #555, #000 70%); }
+        .stone.white { background: radial-gradient(circle at 30% 30%, #fff, #ccc 70%); border: 1px solid #aaa; }
+        .win-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 12, 27, 0.9); z-index: 999; justify-content: center; align-items: center; flex-direction: column; }
+        .win-modal { background: linear-gradient(135deg, #1f1c2c, #928dab); padding: 40px; border-radius: 20px; text-align: center; border: 2px solid #00ffff; }
+        .win-title { font-size: 2.5rem; color: #ffcc00; margin-bottom: 30px; }
+        .modal-btns { display: flex; gap: 20px; justify-content: center; }
+        .btn-home { background: linear-gradient(45deg, #4b6cb7, #182848); }
+        .rules-card { margin-top: 25px; max-width: 550px; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px; color: #ccc; border-left: 4px solid #00ffff; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+    <h1>🎲 智慧棋類對戰中心</h1>
+    
+    <div class="controls">
+        <label for="game-select">遊戲：</label>
+        <select id="game-select">
+            <option value="gomoku">五子棋 (15x15)</option>
+            <option value="othello">黑白棋 (8x8)</option>
+            <option value="go">圍棋體驗 (19x19)</option>
+        </select>
+
+        <label for="mode-select">模式：</label>
+        <select id="mode-select">
+            <option value="pvp">👥 雙人對戰</option>
+            <option value="pve-first">🤖 電腦對戰 (玩家先手)</option>
+            <option value="pve-second">🤖 電腦對戰 (玩家後手)</option>
+        </select>
+
+        <button id="restart-btn">重新開始</button>
+    </div>
+
+    <div id="game-status" class="status">輪到：⚫ 黑子</div>
+
+    <div class="board-container">
+        <div id="board"></div>
+    </div>
+
+    <div class="rules-card">
+        <h3 style="margin-top:0; color:#fff;">💡 當前模式指南：</h3>
+        <p id="game-desc">載入中...</p>
+    </div>
+
+    <div id="win-overlay" class="win-overlay">
+        <div class="win-modal">
+            <div id="win-message" class="win-title">🎉 黑子獲勝！</div>
+            <div class="modal-btns">
+                <button id="modal-next-btn">再下一局</button>
+                <button id="modal-home-btn" class="btn-home">回首頁選單</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const boardElement = document.getElementById('board');
+            const gameSelect = document.getElementById('game-select');
+            const modeSelect = document.getElementById('mode-select');
+            const restartBtn = document.getElementById('restart-btn');
+            const statusElement = document.getElementById('game-status');
+            const descElement = document.getElementById('game-desc');
+            const winOverlay = document.getElementById('win-overlay');
+            const winMessage = document.getElementById('win-message');
+            const modalNextBtn = document.getElementById('modal-next-btn');
+            const modalHomeBtn = document.getElementById('modal-home-btn');
+
+            let boardSize = 15;
+            let currentGame = 'gomoku';
+            let gameMode = 'pvp'; 
+            let playerColor = 'black'; 
+            let currentPlayer = 'black'; 
+            let boardState = []; 
+            let gameOver = false;
+            let isAiThinking = false;
+
+            const descriptions = {
+                gomoku: "【五子棋】先連成五子者勝。選擇先手你執黑先下；選擇後手你執白，電腦黑子會先落子。",
+                othello: "【黑白棋】夾住敵子即可翻轉。選擇先手你執黑，後手執白。最後棋子多者勝。",
+                go: "【圍棋體驗】19x19 大棋盤。具備自動「提子（吃子）」功能！把對手的棋子四周的「氣」完全堵死即可使其從棋盤消失，不允許自殺下法。"
+            };
+
+            function initGame() {
+                currentGame = gameSelect.value;
+                gameMode = modeSelect.value;
+                gameOver = false;
+                isAiThinking = false;
+                currentPlayer = 'black'; 
+                winOverlay.style.display = 'none'; 
+
+                playerColor = (gameMode === 'pve-second') ? 'white' : 'black';
+                descElement.innerText = descriptions[currentGame];
+
+                if (currentGame === 'gomoku') boardSize = 15;
+                else if (currentGame === 'othello') boardSize = 8;
+                else if (currentGame === 'go') boardSize = 19;
+
+                boardState = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+
+                if (currentGame === 'othello') {
+                    const mid = boardSize / 2;
+                    boardState[mid-1][mid-1] = 'white';
+                    boardState[mid][mid] = 'white';
+                    boardState[mid-1][mid] = 'black';
+                    boardState[mid][mid-1] = 'black';
+                }
+
+                updateStatus();
+                renderBoard();
+
+                if (gameMode === 'pve-second' && currentPlayer === 'black') {
+                    isAiThinking = true;
+                    setTimeout(makeAiMove, 500);
+                }
+            }
+
+            // 安全獲取地盤狀態的輔助函式
+            function getPiece(r, c) {
+                if (r < 0 || r >= boardSize || c < 0 || c >= boardSize) return null;
+                return boardState[r][c];
+            }
+
+            function updateStatus() {
+                if (gameOver) return;
+                let name = currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子';
+                statusElement.innerText = (gameMode === 'pvp') ? `輪到：${name}` : (currentPlayer === playerColor ? `輪到：${name} (你)` : `🤖 電腦思考中...`);
+            }
+
+            function renderBoard() {
+                boardElement.innerHTML = '';
+                boardElement.style.gridTemplateColumns = `repeat(${boardSize}, 32px)`;
+                boardElement.style.gridTemplateRows = `repeat(${boardSize}, 32px)`;
+
+                for (let r = 0; r < boardSize; r++) {
+                    for (let c = 0; c < boardSize; c++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('cell');
+                        if (boardState[r][c]) {
+                            const stone = document.createElement('div');
+                            stone.classList.add('stone', boardState[r][c]);
+                            cell.appendChild(stone);
+                        }
+                        cell.addEventListener('click', () => {
+                            if (gameOver || isAiThinking || boardState[r][c]) return;
+                            if (gameMode !== 'pvp' && currentPlayer !== playerColor) return; 
+                            executeMove(r, c);
+                        });
+                        boardElement.appendChild(cell);
+                    }
+                }
+            }
+
+            function executeMove(r, c) {
+                if (currentGame === 'gomoku') {
+                    boardState[r][c] = currentPlayer;
+                    renderBoard();
+                    if (checkWin(r, c, currentPlayer)) {
+                        endGame(currentPlayer === 'black' ? '⚫ 黑子獲勝！' : '⚪ 白子獲勝！');
+                        return;
+                    }
+                    switchTurn();
+                } 
+                else if (currentGame === 'go') {
+                    boardState[r][c] = currentPlayer;
+                    let opponent = currentPlayer === 'black' ? 'white' : 'black';
+                    let capturedAny = false;
+                    
+                    for (let i = 0; i < boardSize; i++) {
+                        for (let j = 0; j < boardSize; j++) {
+                            if (boardState[i][j] === opponent) {
+                                let group = [];
+                                if (getLibertyCount(i, j, opponent, group) === 0) {
+                                    group.forEach(pos => { boardState[pos.r][pos.c] = null; });
+                                    capturedAny = true;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (!capturedAny) {
+                        let selfGroup = [];
+                        if (getLibertyCount(r, c, currentPlayer, selfGroup) === 0) {
+                            boardState[r][c] = null; 
+                            if (gameMode === 'pvp' || currentPlayer === playerColor) {
+                                alert("這裡沒有氣了，不能自殺下法喔！");
+                            }
+                            return;
+                        }
+                    }
+
+                    renderBoard();
+                    switchTurn();
+                } 
+                else if (currentGame === 'othello') {
+                    if (flipStones(r, c, currentPlayer, true) > 0) {
+                        boardState[r][c] = currentPlayer;
+                        renderBoard();
+                        if (boardState.every(row => row.every(cell => cell !== null)) || (!hasMoves('black') && !hasMoves('white'))) {
+                            let b = 0, w = 0;
+                            for(let i=0;i<boardSize;i++) for(let j=0;j<boardSize;j++) { if(boardState[i][j]==='black') b++; if(boardState[i][j]==='white') w++; }
+                            endGame(b > w ? `🏁 黑子獲勝 (${b} vs ${w})` : (w > b ? `🏁 白子獲勝 (${w} vs ${b})` : `🏁 雙方平手 (${b} vs ${w})`));
+                        } else {
+                            switchTurn();
+                        }
+                    } else if (gameMode === 'pvp' || currentPlayer === playerColor) {
+                        alert("這裡不能放喔！必須能翻轉對手的棋子。");
+                    }
+                }
+            }
+
+            function getLibertyCount(startR, startC, color, outGroup) {
+                let visited = Array(boardSize).fill(null).map(() => Array(boardSize).fill(false));
+                let queue = [{r: startR, c: startC}];
+                visited[startR][startC] = true;
+                let liberties = new Set();
+                let dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+
+                while(queue.length > 0) {
+                    let curr = queue.shift();
+                    outGroup.push(curr);
+
+                    for(let [dr, dc] of dirs) {
+                        let nr = curr.r + dr, nc = curr.c + dc;
+                        if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+                            if (boardState[nr][nc] === null) {
+                                liberties.add(`${nr}_${nc}`); 
+                            } else if (boardState[nr][nc] === color && !visited[nr][nc]) {
+                                visited[nr][nc] = true;
+                                queue.push({r: nr, c: nc});
+                            }
+                        }
+                    }
+                }
+                return liberties.size;
+            }
+
+            function switchTurn() {
+                currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                updateStatus();
+                if (gameMode !== 'pvp' && currentPlayer !== playerColor && !gameOver) {
+                    isAiThinking = true;
+                    setTimeout(makeAiMove, 400);
+                }
+            }
+
+            function endGame(msg) {
+                gameOver = true;
+                winMessage.innerText = msg;
+                winOverlay.style.display = 'flex';
+            }
+
+            function makeAiMove() {
                 if (gameOver) return;
                 let targetR = -1, targetC = -1;
                 let aiColor = playerColor === 'black' ? 'white' : 'black';
 
                 if (currentGame === 'gomoku') {
-                    // 【五子棋高智商 AI】評估全盤，懂得防守玩家的連線，也會自己進攻！
                     let maxScore = -1;
                     for (let r = 0; r < boardSize; r++) {
                         for (let c = 0; c < boardSize; c++) {
                             if (!boardState[r][c]) {
-                                // 基礎分：越靠近中心分數越高
                                 let score = (boardSize/2 - Math.abs(r - boardSize/2)) + (boardSize/2 - Math.abs(c - boardSize/2));
-                                
-                                // 核心算法：檢查四個方向的連子狀況
                                 const dirs = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
                                 for (let d of dirs) {
                                     let aiCount = 0;
@@ -26,26 +292,17 @@ function makeAiMove() {
                                             nr += dr; nc += dc;
                                         }
                                     }
-                                    // 防守死穴：玩家快連成 4 子或 3 子，立刻去堵！
                                     if (playerCount >= 4) score += 10000;
                                     else if (playerCount >= 3) score += 1000;
-                                    
-                                    // 進攻核心：自己快連成 4 子或 3 子，優先進攻！
                                     if (aiCount >= 4) score += 50000;
                                     else if (aiCount >= 3) score += 5000;
                                     else if (aiCount >= 2) score += 100;
                                 }
-                                
-                                if (score > maxScore) {
-                                    maxScore = score;
-                                    targetR = r;
-                                    targetC = c;
-                                }
+                                if (score > maxScore) { maxScore = score; targetR = r; targetC = c; }
                             }
                         }
                     }
                 } else if (currentGame === 'othello') {
-                    // 【黑白棋高手 AI】除了翻轉最多棋子，還超級喜歡搶角落 (0,0), (0,7) 等黃金位置！
                     let maxScore = -1;
                     for (let r = 0; r < boardSize; r++) {
                         for (let c = 0; c < boardSize; c++) {
@@ -53,13 +310,53 @@ function makeAiMove() {
                                 let flips = flipStones(r, c, aiColor, false);
                                 if (flips > 0) {
                                     let score = flips;
-                                    // 角落權重極高
                                     if ((r === 0 || r === boardSize-1) && (c === 0 || c === boardSize-1)) score += 50;
-                                    // 邊緣權重中等
                                     else if (r === 0 || r === boardSize-1 || c === 0 || c === boardSize-1) score += 10;
+                                    if (score > maxScore) { maxScore = score; targetR = r; targetC = c; }
+                                }
+                            }
+                        }
+                    }
+                    if (maxScore === -1) { isAiThinking = false; switchTurn(); return; }
+                } else if (currentGame === 'go') {
+                    // 【徹底修正命名空間的圍棋高智商戰鬥 AI】
+                    let maxGoScore = -10000;
+                    let candidates = [];
+                    
+                    for (let r = 0; r < boardSize; r++) {
+                        for (let c = 0; c < boardSize; c++) {
+                            if (!boardState[r][c]) {
+                                boardState[r][c] = aiColor;
+                                let tempGroup = [];
+                                let liberties = getLibertyCount(r, c, aiColor, tempGroup);
+                                boardState[r][c] = null; 
+                                
+                                if (liberties > 1) { // 確保自己不會蠢到馬上下完變死棋
+                                    let goScore = 0;
                                     
-                                    if (score > maxScore) {
-                                        maxScore = score;
+                                    // 基礎分：稍微往中心靠攏
+                                    goScore += (10 - Math.abs(r - 9)) + (10 - Math.abs(c - 9));
+                                    
+                                    // 關鍵檢查：四周是否有玩家的棋子，進行包夾進攻或防守
+                                    const neighbors = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+                                    for (let idx = 0; idx < neighbors.length; idx++) {
+                                        let offset = neighbors[idx];
+                                        let checkR = r + offset[0];
+                                        let checkC = c + offset[1];
+                                        let currentPiece = getPiece(checkR, checkC);
+                                        
+                                        if (currentPiece === playerColor) {
+                                            goScore += 40; // 貼近玩家棋子，進行包打戰術！
+                                        } else if (currentPiece === aiColor) {
+                                            goScore += 20; // 懂得跟自己的棋子連成一塊
+                                        }
+                                    }
+                                    
+                                    // 增加隨機擾動，避免每次下的死板
+                                    goScore += Math.random() * 8;
+                                    
+                                    if (goScore > maxGoScore) {
+                                        maxGoScore = goScore;
                                         targetR = r;
                                         targetC = c;
                                     }
@@ -67,49 +364,72 @@ function makeAiMove() {
                             }
                         }
                     }
-                    if (maxScore === -1) { isAiThinking = false; switchTurn(); return; }
-                } else if (currentGame === 'go') {
-                    // 【圍棋微升級 AI】不再瞎下，優先選擇能靠近玩家棋子進行「貼身纏鬥」或佔據中心位置的地方
-                    let candidates = [];
-                    for (let r = 0; r < boardSize; r++) {
-                        for (let c = 0; c < boardSize; c++) {
-                            if (!boardState[r][c]) {
-                                boardState[r][c] = aiColor;
-                                let g = [];
-                                let liberties = getLibertyCount(r, c, aiColor, g);
-                                boardState[r][c] = null; 
-                                
-                                if (liberties > 1) { // 至少要有兩氣以上，不開局就自殺
-                                    let score = 0;
-                                    const n = [[-1,0],[1,0],[0,-1],[0,1]];
-                                    for(let [dr, dc] of n) {
-                                        let nr = r+dr, nc = c+dc;
-                                        if (nr>=0 && nr<boardSize && nc>=0 && nc<boardSize) {
-                                            if (boardState[nr][nc] === playerColor) score += 10; // 喜歡貼著玩家下
-                                            if (boardState[nr][nc] === aiColor) score += 5;     // 懂得把自己的棋子連起來
-                                        }
-                                    }
-                                    // 加上一點隨機度，避免每次都下一樣的呆板陣型
-                                    score += Math.random() * 5;
-                                    candidates.push({r, c, score});
-                                }
-                            }
-                        }
-                    }
-                    if (candidates.length > 0) {
-                        candidates.sort((a,b) => b.score - a.score);
-                        targetR = candidates[0].r; targetC = candidates[0].c;
-                    }
                 }
 
-                // 備用安全方案（如果找不到好位置，就隨機下）
+                // 安全防禦下法（如果上面沒找到好位置，就找靠近中心空位下）
                 if (targetR === -1 || targetC === -1) {
                     let empty = [];
-                    for(let r=0; r<boardSize; r++) for(let c=0; c<boardSize; c++) if(!boardState[r][c]) empty.push([r,c]);
-                    if (empty.length > 0) { const p = empty[Math.floor(Math.random()*empty.length)]; targetR = p[0]; targetC = p[1]; }
+                    for(let r=0; r<boardSize; r++) {
+                        for(let c=0; c<boardSize; c++) {
+                            if(!boardState[r][c]) empty.push([r,c]);
+                        }
+                    }
+                    if (empty.length > 0) {
+                        // 隨機抽 10 個位置，選一個最靠近中心的下
+                        empty.sort(() => Math.random() - 0.5);
+                        let bestPos = empty[0];
+                        let minCenterDist = 100;
+                        let sampleCount = Math.min(empty.length, 15);
+                        for(let k=0; k<sampleCount; k++) {
+                            let dist = Math.abs(empty[k][0] - 9) + Math.abs(empty[k][1] - 9);
+                            if (dist < minCenterDist) { minCenterDist = dist; bestPos = empty[k]; }
+                        }
+                        targetR = bestPos[0]; targetC = bestPos[1];
+                    }
                 }
 
                 isAiThinking = false;
                 if (targetR !== -1 && targetC !== -1) executeMove(targetR, targetC);
                 else switchTurn();
             }
+
+            function checkWin(r, c, p) {
+                const dirs = [[[0,1],[0,-1]], [[1,0],[-1,0]], [[1,1],[-1,-1]], [[1,-1],[-1,1]]];
+                for (let d of dirs) {
+                    let count = 1;
+                    for (let [dr, dc] of d) {
+                        let nr = r + dr, nc = c + dc;
+                        while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === p) { count++; nr += dr; nc += dc; }
+                    }
+                    if (count >= 5) return true;
+                }
+                return false;
+            }
+
+            function flipStones(r, c, p, doFlip) {
+                const opp = p === 'black' ? 'white' : 'black';
+                const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+                let total = 0, toFlip = [];
+                for (let [dr, dc] of dirs) {
+                    let nr = r + dr, nc = c + dc, current = [];
+                    while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === opp) { current.push([nr, nc]); nr += dr; nc += dc; }
+                    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === p && current.length > 0) toFlip = toFlip.concat(current);
+                }
+                if (doFlip) for (let [fr, fc] of toFlip) { boardState[fr][fc] = p; total++; }
+                else total = toFlip.length;
+                return total;
+            }
+
+            function hasMoves(p) { for (let r = 0; r < boardSize; r++) for (let c = 0; c < boardSize; c++) if (!boardState[r][c] && flipStones(r, c, p, false) > 0) return true; return false; }
+
+            modalNextBtn.addEventListener('click', initGame);
+            modalHomeBtn.addEventListener('click', () => { window.location.href = window.location.origin + window.location.pathname + '?t=' + Date.now(); });
+            gameSelect.addEventListener('change', initGame);
+            modeSelect.addEventListener('change', initGame);
+            restartBtn.addEventListener('click', initGame);
+
+            initGame();
+        };
+    </script>
+</body>
+</html>
