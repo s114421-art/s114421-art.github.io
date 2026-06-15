@@ -46,7 +46,7 @@
         <label for="game-select">遊戲：</label>
         <select id="game-select">
             <option value="gomoku">五子棋 (15x15)</option>
-            <option value="othello">黑白棋 (12x12 世紀大棋盤)</option>
+            <option value="othello">黑白棋 (12x12 大棋盤)</option>
             <option value="go">圍棋體驗 (19x19)</option>
         </select>
 
@@ -104,9 +104,9 @@
             let isAiThinking = false;
 
             const descriptions = {
-                gomoku: "【五子棋】地獄級 AI 已啟用！電腦現在擁有極強的攻防矩陣，會主動封堵你的三三、四四活路，並狡猾地展開進攻！",
-                othello: "【世紀黑白棋】全面擴展至 12x12 超大棋盤！戰術空間瘋狂加倍，AI 策略全面強化，會死守最外圍 4 個黃金角落，極具侵略性！",
-                go: "【圍棋體驗】自動吃子練習場。當雙方對局完畢或無法再下時，點擊上方藍色的「🏁 結算」按鈕，即可依照圍棋規則進行數子判定輸贏。"
+                gomoku: "【五子棋】超強攻防 AI！電腦擁有敏銳的防守感知，會用最高權重封截玩家的所有連三、連四線路，絕不給輕易獲勝的機會！",
+                othello: "【特大黑白棋】全面擴展至 12x12 戰場！AI 戰術全面調整，會嚴格計算翻轉期望值，並優先爭奪四大外圍黃金邊角位置！",
+                go: "【圍棋體驗】自動提子練習場。對局完畢後，點擊上方藍色的「🏁 結算」按鈕，即可自動計算棋盤上的地盤與目數判定輸贏。"
             };
 
             function initGame() {
@@ -151,7 +151,11 @@
             function updateStatus() {
                 if (gameOver) return;
                 let name = currentPlayer === 'black' ? '⚫ 黑子' : '⚪ 白子';
-                statusElement.innerText = (gameMode === 'pvp') ? `輪到：${name}` : (currentPlayer === playerColor ? `輪到：${name} (你)` : `🤖 電腦思考中...`);
+                if (gameMode === 'pvp') {
+                    statusElement.innerText = `輪到：${name}`;
+                } else {
+                    statusElement.innerText = (currentPlayer === playerColor) ? `輪到：${name} (你)` : `🤖 電腦思考中...`;
+                }
             }
 
             function renderBoard() {
@@ -351,19 +355,21 @@
                     for (let r = 0; r < boardSize; r++) {
                         for (let c = 0; c < boardSize; c++) {
                             if (!boardState[r][c]) {
+                                // 基礎中心權重
                                 let score = (7 - Math.abs(r - 7)) + (7 - Math.abs(c - 7)); 
                                 let dirs = [[0,1], [1,0], [1,1], [1,-1]];
                                 
                                 for (let i=0; i<dirs.length; i++) {
                                     let res = evaluateGomokuLine(r, c, dirs[i][0], dirs[i][1], aiColor, playerColor);
                                     
-                                    if (res.aiCount >= 4) score += 10000000; 
-                                    else if (res.playerCount >= 4) score += 2000000; 
-                                    else if (res.aiCount === 3 && res.openEnds === 2) score += 500000; 
-                                    else if (res.playerCount === 3 && res.openEnds === 2) score += 300000; 
-                                    else if (res.aiCount === 3 && res.openEnds === 1) score += 80000;
-                                    else if (res.playerCount === 3 && res.openEnds === 1) score += 60000;
-                                    else if (res.playerCount === 2 && res.openEnds === 2) score += 20000;
+                                    // 核心防守與攻擊權重調校
+                                    if (res.aiCount >= 4) score += 50000000; 
+                                    else if (res.playerCount >= 4) score += 20000000; // 絕對攔截玩家的活四/死四
+                                    else if (res.playerCount === 3 && res.openEnds === 2) score += 5000000; // 絕對攔截玩家的雙向活三
+                                    else if (res.aiCount === 3 && res.openEnds === 2) score += 200000; 
+                                    else if (res.playerCount === 3 && res.openEnds === 1) score += 80000;
+                                    else if (res.aiCount === 3 && res.openEnds === 1) score += 50000;
+                                    else if (res.playerCount === 2 && res.openEnds === 2) score += 30000; // 提前破壞玩家連線雛形
                                     else if (res.aiCount === 2 && res.openEnds === 2) score += 10000;
                                 }
                                 if (score > maxScore) { maxScore = score; targetR = r; targetC = c; }
@@ -377,12 +383,14 @@
                             if (!boardState[r][c]) {
                                 let flips = flipStones(r, c, aiColor, false);
                                 if (flips > 0) {
-                                    let score = flips * 2;
+                                    let score = flips * 4;
                                     
-                                    if ((r === 0 || r === boardSize-1) && (c === 0 || c === boardSize-1)) score += 500; 
-                                    else if (r === 0 || r === boardSize-1 || c === 0 || c === boardSize-1) score += 80;  
-                                    
-                                    if ((r === 1 || r === boardSize-2) && (c === 1 || c === boardSize-2)) score -= 50; 
+                                    // 12x12 特大角落極高權重
+                                    if ((r === 0 || r === boardSize-1) && (c === 0 || c === boardSize-1)) score += 2000; 
+                                    // 邊緣權重
+                                    else if (r === 0 || r === boardSize-1 || c === 0 || c === boardSize-1) score += 150;  
+                                    // 絕不輕易踩死角旁邊的陷阱格
+                                    if ((r === 1 || r === boardSize-2) && (c === 1 || c === boardSize-2)) score -= 100; 
 
                                     if (score > maxScore) { maxScore = score; targetR = r; targetC = c; }
                                 }
@@ -459,4 +467,41 @@
 
             function flipStones(r, c, p, doFlip) {
                 const opp = p === 'black' ? 'white' : 'black';
-                let dirs = [[-1,-1],[-1,0],[-1,1],
+                let dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+                let total = 0;
+                let toFlip = [];
+                for (let i=0; i<dirs.length; i++) {
+                    let nr = r + dirs[i][0], nc = c + dirs[i][1];
+                    let current = [];
+                    while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === opp) { 
+                        current.push([nr, nc]); 
+                        nr += dirs[i][0]; 
+                        nc += dirs[i][1]; 
+                    }
+                    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && boardState[nr][nc] === p && current.length > 0) {
+                        toFlip = toFlip.concat(current);
+                    }
+                }
+                if (doFlip) { 
+                    for (let i=0; i<toFlip.length; i++) { 
+                        boardState[toFlip[i][0]][toFlip[i][1]] = p; 
+                        total++; 
+                    } 
+                }
+                else total = toFlip.length;
+                return total;
+            }
+
+            function hasMoves(p) { for (let r = 0; r < boardSize; r++) for (let c = 0; c < boardSize; c++) if (!boardState[r][c] && flipStones(r, c, p, false) > 0) return true; return false; }
+
+            modalNextBtn.addEventListener('click', initGame);
+            gameSelect.addEventListener('change', initGame);
+            modeSelect.addEventListener('change', initGame);
+            restartBtn.addEventListener('click', initGame);
+            goFinishBtn.addEventListener('click', judgeGoWinner);
+
+            initGame();
+        };
+    </script>
+</body>
+</html>
